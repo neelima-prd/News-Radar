@@ -1,0 +1,6 @@
+{
+  "name": "News Radar",
+  "description": "An AI-powered intelligence briefing for busy professionals that aggregates news, clusters related stories, ranks updates, and summarizes why they matter.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
