@@ -4,24 +4,25 @@
  */
 
 import React, { useState } from "react";
-import { ThumbsUp, ThumbsDown, BookOpen, ExternalLink, HelpCircle, ChevronRight, Check } from "lucide-react";
+import { ThumbsUp, ThumbsDown, BookOpen, ExternalLink, ChevronRight, Check } from "lucide-react";
 import { BriefingCard } from "../types";
 import { motion, AnimatePresence } from "motion/react";
 
 export function InsightCard({
   card,
+  isTopStory = false,
   onFeedbackSubmitted
 }: {
   card: BriefingCard;
+  isTopStory?: boolean;
   onFeedbackSubmitted: () => void;
-  key?: string;
+  key?: string | number;
 }) {
   const [rated, setRated] = useState<"up" | "down" | null>(null);
   const [comment, setComment] = useState("");
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentSaved, setCommentSaved] = useState(false);
   const [showSources, setShowSources] = useState(false);
-  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
 
   const handleRate = async (type: "up" | "down") => {
     try {
@@ -81,18 +82,18 @@ export function InsightCard({
     } catch (_) {}
   };
 
-  // Assign distinct warm tint depending on category
+  // Re-designed luxury category label tags (calm, high contrast, clean)
   const categoryStyles: Record<string, string> = {
-    "AI & ML": "bg-emerald-50 text-emerald-700 border-emerald-100",
+    "AI & ML": "bg-blue-50 text-blue-700 border-blue-100",
     "Startups & VC": "bg-indigo-50 text-indigo-700 border-indigo-100",
     "Biotech": "bg-rose-50 text-rose-700 border-rose-100",
     "Fintech": "bg-amber-50 text-amber-700 border-amber-100",
-    "Green Tech": "bg-teal-50 text-teal-700 border-tea-100",
+    "Green Tech": "bg-emerald-50 text-emerald-700 border-emerald-100",
     "Hardware": "bg-purple-50 text-purple-700 border-purple-100",
-    "SaaS": "bg-blue-50 text-blue-700 border-blue-100"
+    "SaaS": "bg-sky-50 text-sky-700 border-sky-100"
   };
 
-  const defaultCategoryStyle = "bg-slate-100 text-slate-700 border-slate-200";
+  const defaultCategoryStyle = "bg-gray-50 text-gray-700 border-gray-150";
 
   return (
     <motion.div
@@ -101,105 +102,55 @@ export function InsightCard({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:border-slate-350 transition-colors"
+      className={`bg-white border text-[#111827] rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col transition-all hover:border-gray-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.03)] ${
+        isTopStory 
+          ? "border-blue-200 ring-1 ring-blue-50 bg-gradient-to-b from-white to-slate-50/20" 
+          : "border-gray-200"
+      }`}
     >
-      {/* Top indicator bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-mono font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full border ${categoryStyles[card.category] || defaultCategoryStyle}`}>
+      {/* Header element */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          {isTopStory && (
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 border border-amber-100 text-amber-800">
+              🔥 Top Story
+            </span>
+          )}
+          <span className={`text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full border ${categoryStyles[card.category] || defaultCategoryStyle}`}>
             {card.category}
           </span>
-          <span className="text-[10px] text-slate-400 font-mono">DEDUPLICATED</span>
         </div>
-
-        {/* Priority Score metrics trigger */}
-        <div className="relative">
-          <button
-            onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200/80 transition text-[11px] font-mono font-bold text-slate-700"
-          >
-            <span>Priority Score:</span>
-            <span className="text-indigo-600">{card.score}</span>
-          </button>
-
-          <AnimatePresence>
-            {showScoreBreakdown && (
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 shadow-lg rounded-lg p-3.5 z-20 font-mono text-[10px]"
-              >
-                <div className="font-bold text-slate-800 border-b border-slate-100 pb-1.5 mb-2 flex items-center justify-between">
-                  <span>Score Weighting</span>
-                  <span>40 - 40 - 20</span>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-slate-500">Relevance (40%)</span>
-                      <span className="font-semibold text-slate-700">{card.relevance}/100</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full" style={{ width: `${card.relevance}%` }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-slate-500">Importance (40%)</span>
-                      <span className="font-semibold text-slate-700">{card.importance}/100</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                      <div className="bg-indigo-500 h-full" style={{ width: `${card.importance}%` }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-slate-500">Popularity (20%)</span>
-                      <span className="font-semibold text-slate-700">{card.popularity}/100</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-full" style={{ width: `${card.popularity}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-2.5 text-[9px] text-slate-400 leading-snug border-t border-slate-50 pt-2">
-                  * Weighted formula matches standard product validation models perfectly.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <span className="text-[11px] text-gray-400 font-medium">Verified Update</span>
       </div>
 
-      {/* Content Area */}
-      <div className="p-5 flex-1 flex flex-col">
-        <h3 className="text-base font-medium text-slate-900 tracking-tight leading-snug mb-3">
+      {/* Main Content body */}
+      <div className={`flex-1 flex flex-col ${isTopStory ? "p-7 md:p-8" : "p-6"}`}>
+        <h3 className={`text-[#111827] font-bold tracking-tight leading-snug mb-3.5 ${isTopStory ? "text-xl md:text-2xl" : "text-base md:text-lg"}`}>
           {card.headline}
         </h3>
 
-        {/* 2-3 Line Summary */}
-        <p className="text-xs text-slate-600 leading-relaxed mb-4">
+        {/* Executive summary block */}
+        <p className={`text-[#4B5563] leading-relaxed mb-5 ${isTopStory ? "text-base" : "text-sm"}`}>
           {card.summary}
         </p>
 
-        {/* Why it matters block */}
-        <div className="bg-slate-50 border-l-[3px] border-indigo-500 p-3.5 rounded-r-lg mb-4">
-          <h4 className="text-[10px] font-mono font-bold tracking-wider text-indigo-700 uppercase mb-1">
+        {/* Re-designed elegant "Why it Matters" highlight block */}
+        <div className="border-l-3 border-blue-600 bg-slate-50/80 p-4 rounded-r-xl mb-5">
+          <h4 className="text-[11px] font-bold tracking-wider text-blue-700 uppercase mb-1">
             Why It Matters
           </h4>
-          <p className="text-xs text-slate-700 leading-relaxed">
+          <p className="text-sm text-gray-700 leading-relaxed">
             {card.why_it_matters}
           </p>
         </div>
 
-        {/* Original Clustered Sources */}
-        <div className="mt-auto border-t border-slate-100 pt-4">
+        {/* References list */}
+        <div className="mt-auto pt-4 border-t border-gray-100">
           <button
             onClick={() => setShowSources(!showSources)}
-            className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-mono font-bold text-slate-500 hover:text-slate-800 transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition"
           >
-            <ChevronRight size={12} className={`transform transition-transform ${showSources ? "rotate-90 text-indigo-500" : ""}`} />
+            <ChevronRight size={14} className={`transform transition-transform text-gray-400 ${showSources ? "rotate-90 text-blue-600" : ""}`} />
             <span>Clustered Sources ({card.source_articles.length})</span>
           </button>
 
@@ -209,9 +160,9 @@ export function InsightCard({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden mt-2"
+                className="overflow-hidden mt-3"
               >
-                <div className="bg-slate-50 rounded-lg p-3 space-y-2 text-xs">
+                <div className="bg-gray-50 rounded-xl p-3.5 space-y-2 text-xs">
                   {card.source_articles.map((art, idx) => (
                     <a
                       key={idx}
@@ -219,14 +170,14 @@ export function InsightCard({
                       target="_blank"
                       referrerPolicy="no-referrer"
                       onClick={() => handleSourceClick(art.url, art.title)}
-                      className="flex items-start gap-2 text-slate-600 hover:text-indigo-600 font-mono text-[10px] border-b border-slate-100 last:border-0 pb-1.5 last:pb-0 transition"
+                      className="flex items-start gap-2.5 text-gray-600 hover:text-blue-600 font-sans text-xs border-b border-gray-100 last:border-0 pb-2 last:pb-0 transition"
                     >
-                      <BookOpen size={10} className="mt-1 text-slate-400 shrink-0" />
+                      <BookOpen size={13} className="mt-0.5 text-gray-400 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-indigo-700">[{art.source}]</span>{" "}
+                        <span className="font-semibold text-blue-700">[{art.source}]</span>{" "}
                         <span className="hover:underline">{art.title}</span>
                       </div>
-                      <ExternalLink size={8} className="mt-1 text-slate-400 shrink-0" />
+                      <ExternalLink size={10} className="mt-0.5 text-gray-400 shrink-0" />
                     </a>
                   ))}
                 </div>
@@ -236,47 +187,47 @@ export function InsightCard({
         </div>
       </div>
 
-      {/* Footer / Feedback collection */}
-      <div className="bg-slate-50 px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs">
-        <span className="text-[10px] font-mono text-slate-400">Did this insight save you search time?</span>
+      {/* Elegant minimalist feedback actions - matching standard design patterns */}
+      <div className="bg-[#FAFBFB] px-6 py-4.5 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">
+        <span className="text-gray-500 font-medium">Was this intelligence segment relevant to your interests?</span>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => handleRate("up")}
-            className={`p-1.5 rounded-full border transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition cursor-pointer ${
               rated === "up" 
-                ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
-                : "bg-white text-slate-500 hover:text-slate-800 border-slate-200"
+                ? "bg-blue-50 text-blue-700 border-blue-200 font-semibold" 
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
-            <ThumbsUp size={12} />
+            <span>👍 Useful</span>
           </button>
           <button
             onClick={() => handleRate("down")}
-            className={`p-1.5 rounded-full border transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition cursor-pointer ${
               rated === "down" 
-                ? "bg-rose-50 text-rose-600 border-rose-200" 
-                : "bg-white text-slate-500 hover:text-slate-800 border-slate-200"
+                ? "bg-red-50 text-red-700 border-red-200 font-semibold" 
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
-            <ThumbsDown size={12} />
+            <span>👎 Not Relevant</span>
           </button>
         </div>
       </div>
 
-      {/* Quick qualitative feedback text field */}
+      {/* Dynamic quantitative feedback text fields */}
       <AnimatePresence>
         {showCommentBox && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-slate-50/50 border-t border-slate-100"
+            className="overflow-hidden bg-[#FAFBFB] border-t border-gray-100"
           >
-            <form onSubmit={handleSaveComment} className="p-3">
+            <form onSubmit={handleSaveComment} className="p-4 pt-1">
               {commentSaved ? (
-                <div className="flex items-center gap-2 text-[11px] text-emerald-600 font-medium py-1 justify-center">
-                  <Check size={14} /> Shared feedback with AI intelligence loop. Thank you!
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold py-2 justify-center">
+                  <Check size={14} className="stroke-[3]" /> Shared feedback with AI intelligence loop. Thank you!
                 </div>
               ) : (
                 <div className="flex gap-2">
@@ -286,9 +237,9 @@ export function InsightCard({
                     placeholder={rated === "up" ? "Why is this card useful to you? (Optional)" : "How can the AI improve this briefing card?"}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    className="flex-1 bg-white border border-slate-200 rounded px-2.5 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-white border border-gray-200 rounded-xl px-3.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
-                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded px-3 py-1 text-xs font-medium cursor-pointer transition">
+                  <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-1.5 text-xs font-semibold cursor-pointer transition">
                     Send
                   </button>
                 </div>

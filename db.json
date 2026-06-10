@@ -1,0 +1,560 @@
+{
+  "briefings": [
+    {
+      "id": "briefing-yesterday",
+      "generated_at": "2026-06-08T11:49:43.925Z",
+      "is_automated": true,
+      "cards": [
+        {
+          "id": "card-y1",
+          "briefing_id": "briefing-yesterday",
+          "headline": "OpenAI Announces Advanced Audio Mode and Voice Customization APIs",
+          "summary": "OpenAI has rolled out a suite of dynamic audio capabilities enabling real-time conversational latencies under 300ms. These tools give developers the ability to build natural multi-turn verbal interactions with custom voice presets and pitch modulation control.",
+          "why_it_matters": "This marks a massive transition from structured text prompting to zero-latency natural audio dialogues. It speeds up the adoption of conversational AI agents across customer service, virtual companions, and interactive accessibility software.",
+          "category": "AI & ML",
+          "relevance": 95,
+          "importance": 90,
+          "popularity": 88,
+          "score": 92,
+          "source_articles": [
+            {
+              "title": "OpenAI releases Realtime API for multi-modal audio applications",
+              "url": "https://techcrunch.com",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Show HN: Building voice bots with OpenAI's new audio endpoint",
+              "url": "https://news.ycombinator.com",
+              "source": "Hacker News"
+            }
+          ]
+        },
+        {
+          "id": "card-y2",
+          "briefing_id": "briefing-yesterday",
+          "headline": "Venture Inflow into Green Tech Surges as Fusion Prototypes Advance",
+          "summary": "New seed funding rounds for inertial confinement fusion and commercial hydrogen refueling grids hit a record $2.4B this quarter. Key startups including Helion and H2Drive reported breakthroughs in containment field stability and cell efficiency.",
+          "why_it_matters": "Private capital is shifting heavily towards ultra-deep tech infrastructure, driven by rising data center energy needs. Heavy tech giants are committing future power-purchase agreements, signaling pre-market commercialization of fusion energy.",
+          "category": "Green Tech",
+          "relevance": 88,
+          "importance": 86,
+          "popularity": 75,
+          "score": 85,
+          "source_articles": [
+            {
+              "title": "Green Energy funding breaks quarterly records as AI demands power",
+              "url": "https://venturebeat.com",
+              "source": "VentureBeat"
+            }
+          ]
+        },
+        {
+          "id": "card-y3",
+          "briefing_id": "briefing-yesterday",
+          "headline": "Y Combinator Introduces AI-Driven Auto-Matching for Co-Founders",
+          "summary": "The flagship startup accelerator rolled out an automated directory pairing co-founders using graph embeddings and complementary skill vectors. The system evaluates previous work telemetry, personality index, and equity preferences to map optimal pairings.",
+          "why_it_matters": "Finding compatible co-founders remains the single largest point of failure for pre-seed startups. Automating raw match-making reduces friction and broadens the pipeline for solo technical founders trying to build structural businesses.",
+          "category": "Startups & VC",
+          "relevance": 85,
+          "importance": 82,
+          "popularity": 80,
+          "score": 83,
+          "source_articles": [
+            {
+              "title": "YC Launches new directory tool to pairing founders by skill embeddings",
+              "url": "https://techcrunch.com",
+              "source": "TechCrunch"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "briefing-prev",
+      "generated_at": "2026-06-07T11:49:43.925Z",
+      "is_automated": true,
+      "cards": [
+        {
+          "id": "card-p1",
+          "briefing_id": "briefing-prev",
+          "headline": "NVIDIA Quantum Simulation Suite Enters Public Beta",
+          "summary": "NVIDIA unveiled its flagship developer toolkit allowing standard CUDA GPU architectures to emulate up to 40 qubits of noise-resistant quantum circuits, accelerating chemical computation and cryptographic hardening trials.",
+          "why_it_matters": "This democratizes early quantum research by letting teams run heavy simulation workloads using existing cloud GPU clusters instead of waiting for physical cryo-cooled quantum rigs.",
+          "category": "AI & ML",
+          "relevance": 92,
+          "importance": 89,
+          "popularity": 82,
+          "score": 89,
+          "source_articles": [
+            {
+              "title": "NVIDIA launches public beta of quantum SDK on Hopper architecture",
+              "url": "https://venturebeat.com",
+              "source": "VentureBeat"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "preferences": {
+    "categories": [
+      "AI & ML",
+      "Startups & VC",
+      "Biotech",
+      "Fintech",
+      "Green Tech"
+    ],
+    "frequency": "hourly",
+    "custom_feeds": [
+      "https://techcrunch.com/feed/",
+      "https://news.ycombinator.com/rss",
+      "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
+    ]
+  },
+  "feedbacks": [
+    {
+      "id": "f1",
+      "card_id": "card-y1",
+      "feedback_type": "up",
+      "comment": "Excellent summary of the voice latency improvements. Exactly what I needed.",
+      "created_at": "2026-06-09T01:49:43.926Z"
+    },
+    {
+      "id": "fdb-mgsdpn47z",
+      "card_id": "card-y2",
+      "feedback_type": "up",
+      "created_at": "2026-06-09T12:23:09.559Z"
+    },
+    {
+      "id": "fdb-e1fwkajnu",
+      "card_id": "card-y2",
+      "feedback_type": "down",
+      "created_at": "2026-06-09T12:23:14.118Z"
+    },
+    {
+      "id": "fdb-2swozlg55",
+      "card_id": "card-y2",
+      "feedback_type": "up",
+      "created_at": "2026-06-09T12:23:16.937Z"
+    }
+  ],
+  "analytics_events": [
+    {
+      "id": "ae1",
+      "event_name": "app_initialized",
+      "metadata": {
+        "user_agent": "Node/Express Server",
+        "system_time": "2026-06-09T11:49:43.926Z"
+      },
+      "created_at": "2026-06-07T11:49:43.926Z"
+    },
+    {
+      "id": "ae2",
+      "event_name": "briefing_viewed",
+      "metadata": {
+        "briefing_id": "briefing-yesterday"
+      },
+      "created_at": "2026-06-08T23:49:43.926Z"
+    },
+    {
+      "id": "evt-5gibow74z",
+      "event_name": "session_started",
+      "metadata": {
+        "device_width": 1372,
+        "timestamp": "2026-06-09T11:49:43.054Z"
+      },
+      "created_at": "2026-06-09T11:49:43.926Z"
+    },
+    {
+      "id": "evt-1fvmoz5c9",
+      "event_name": "session_started",
+      "metadata": {
+        "device_width": 1372,
+        "timestamp": "2026-06-09T11:49:43.298Z"
+      },
+      "created_at": "2026-06-09T11:49:43.981Z"
+    },
+    {
+      "id": "evt-yh0fsjlww",
+      "event_name": "session_started",
+      "metadata": {
+        "device_width": 1372,
+        "timestamp": "2026-06-09T11:49:43.299Z"
+      },
+      "created_at": "2026-06-09T11:49:44.026Z"
+    },
+    {
+      "id": "evt-aicgdpph9",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T12:22:34.202Z"
+    },
+    {
+      "id": "evt-hiakgxpfu",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T12:22:35.701Z"
+    },
+    {
+      "id": "evt-0j0l8lpjk",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T12:22:36.037Z"
+    },
+    {
+      "id": "evt-j6sv5ogqk",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T12:22:38.686Z"
+    },
+    {
+      "id": "evt-brxhu8jnl",
+      "event_name": "radar_sweep_started",
+      "metadata": {
+        "custom_feed_count": 2,
+        "subscribed_categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech"
+        ]
+      },
+      "created_at": "2026-06-09T12:22:56.685Z"
+    },
+    {
+      "id": "evt-ngc0hfjj0",
+      "event_name": "radar_sweep_failed",
+      "metadata": {
+        "reason": "{\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}"
+      },
+      "created_at": "2026-06-09T12:23:08.094Z"
+    },
+    {
+      "id": "evt-9ski9az0c",
+      "event_name": "feedback_submitted",
+      "metadata": {
+        "card_id": "card-y2",
+        "feedback_type": "up",
+        "has_comment": false
+      },
+      "created_at": "2026-06-09T12:23:09.559Z"
+    },
+    {
+      "id": "evt-05al63j1k",
+      "event_name": "feedback_submitted",
+      "metadata": {
+        "card_id": "card-y2",
+        "feedback_type": "down",
+        "has_comment": false
+      },
+      "created_at": "2026-06-09T12:23:14.119Z"
+    },
+    {
+      "id": "evt-wgo6vdv6s",
+      "event_name": "feedback_submitted",
+      "metadata": {
+        "card_id": "card-y2",
+        "feedback_type": "up",
+        "has_comment": false
+      },
+      "created_at": "2026-06-09T12:23:16.938Z"
+    },
+    {
+      "id": "evt-y7cghxpja",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T15:43:59.328Z"
+    },
+    {
+      "id": "evt-0ati17nkm",
+      "event_name": "notifications_permission_updated",
+      "metadata": {
+        "status": "denied"
+      },
+      "created_at": "2026-06-09T15:44:00.375Z"
+    },
+    {
+      "id": "evt-wnciuxciy",
+      "event_name": "tab_switched",
+      "metadata": {
+        "tab": "archive"
+      },
+      "created_at": "2026-06-09T15:44:09.787Z"
+    },
+    {
+      "id": "evt-t99g11dgh",
+      "event_name": "tab_switched",
+      "metadata": {
+        "tab": "preferences"
+      },
+      "created_at": "2026-06-09T15:44:16.389Z"
+    },
+    {
+      "id": "evt-m2jpca5nu",
+      "event_name": "preferences_updated",
+      "metadata": {
+        "categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech",
+          "Hardware"
+        ],
+        "frequency": "daily",
+        "feed_count": 2
+      },
+      "created_at": "2026-06-09T15:44:18.509Z"
+    },
+    {
+      "id": "evt-3nbjtl546",
+      "event_name": "preferences_updated",
+      "metadata": {
+        "categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech"
+        ],
+        "frequency": "daily",
+        "feed_count": 2
+      },
+      "created_at": "2026-06-09T15:44:20.422Z"
+    },
+    {
+      "id": "evt-7a3wh2dve",
+      "event_name": "preferences_updated",
+      "metadata": {
+        "categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech"
+        ],
+        "frequency": "weekly",
+        "feed_count": 2
+      },
+      "created_at": "2026-06-09T15:49:02.714Z"
+    },
+    {
+      "id": "evt-yv09nipb3",
+      "event_name": "preferences_updated",
+      "metadata": {
+        "categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech"
+        ],
+        "frequency": "hourly",
+        "feed_count": 2
+      },
+      "created_at": "2026-06-09T15:49:04.376Z"
+    },
+    {
+      "id": "evt-3o93ah16i",
+      "event_name": "tab_switched",
+      "metadata": {
+        "tab": "current"
+      },
+      "created_at": "2026-06-09T15:50:01.767Z"
+    },
+    {
+      "id": "evt-lflack133",
+      "event_name": "radar_sweep_started",
+      "metadata": {
+        "custom_feed_count": 2,
+        "subscribed_categories": [
+          "AI & ML",
+          "Startups & VC",
+          "Biotech",
+          "Fintech",
+          "Green Tech"
+        ]
+      },
+      "created_at": "2026-06-09T15:50:23.780Z"
+    },
+    {
+      "id": "evt-agyorvvd2",
+      "event_name": "radar_sweep_failed",
+      "metadata": {
+        "reason": "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+      },
+      "created_at": "2026-06-09T15:55:23.902Z"
+    },
+    {
+      "id": "evt-vc85lc94h",
+      "event_name": "session_started",
+      "metadata": {
+        "device_width": 0,
+        "timestamp": "2026-06-09T16:04:42.890Z"
+      },
+      "created_at": "2026-06-09T16:04:43.747Z"
+    },
+    {
+      "id": "evt-e6e489f47",
+      "event_name": "session_started",
+      "metadata": {
+        "device_width": 0,
+        "timestamp": "2026-06-09T16:04:42.895Z"
+      },
+      "created_at": "2026-06-09T16:04:43.750Z"
+    }
+  ],
+  "live_logs": [
+    {
+      "timestamp": "2026-06-09T11:49:43.926Z",
+      "message": "Database system initialized. Seed briefings loaded successfully.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:56.687Z",
+      "message": "Starting News Retrieval Engine...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:56.687Z",
+      "message": "Fetching TechCrunch RSS feed from https://techcrunch.com/feed/",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:56.731Z",
+      "message": "Successfully ingested 20 raw stories from TechCrunch",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:56.731Z",
+      "message": "Fetching Hacker News RSS feed from https://news.ycombinator.com/rss",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:57.464Z",
+      "message": "Successfully ingested 30 raw stories from Hacker News",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:57.465Z",
+      "message": "Aggregation completed. Total of 60 stories parsed and ready for AI processing.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:57.465Z",
+      "message": "Starting Gemini AI News Radar Grid...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:57.466Z",
+      "message": "Phase 1: Deduplicating and clustering related articles...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:22:57.466Z",
+      "message": "Phase 2: Invoking Gemini-3.5-Flash with responseSchema schema validation...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:23:07.857Z",
+      "message": "Gemini synthesis failed: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}. Handing graceful fallback using heuristic compiler.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2026-06-09T12:23:09.559Z",
+      "message": "User submitted feedback response [UP] for card card-y2.",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:23:14.119Z",
+      "message": "User submitted feedback response [DOWN] for card card-y2.",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T12:23:16.938Z",
+      "message": "User submitted feedback response [UP] for card card-y2.",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:44:18.510Z",
+      "message": "User preferences and custom feed configurations updated.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:44:20.422Z",
+      "message": "User preferences and custom feed configurations updated.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:49:02.714Z",
+      "message": "User preferences and custom feed configurations updated.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:49:04.376Z",
+      "message": "User preferences and custom feed configurations updated.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:23.782Z",
+      "message": "Starting News Retrieval Engine...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:23.782Z",
+      "message": "Fetching TechCrunch RSS feed from https://techcrunch.com/feed/",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:23.806Z",
+      "message": "Successfully ingested 20 raw stories from TechCrunch",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:23.806Z",
+      "message": "Fetching Hacker News RSS feed from https://news.ycombinator.com/rss",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:24.558Z",
+      "message": "Successfully ingested 30 raw stories from Hacker News",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:24.559Z",
+      "message": "Aggregation completed. Total of 60 stories parsed and ready for AI processing.",
+      "type": "success"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:24.559Z",
+      "message": "Starting Gemini AI News Radar Grid...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:24.560Z",
+      "message": "Phase 1: Deduplicating and clustering related articles...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:50:24.560Z",
+      "message": "Phase 2: Invoking Gemini-3.5-Flash with responseSchema schema validation...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-06-09T15:55:25.086Z",
+      "message": "Gemini synthesis failed: fetch failed. Handing graceful fallback using heuristic compiler.",
+      "type": "error"
+    }
+  ]
+}

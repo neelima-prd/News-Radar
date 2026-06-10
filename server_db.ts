@@ -22,7 +22,8 @@ const DEFAULT_PREFS: UserPreferences = {
   frequency: "daily",
   custom_feeds: [
     "https://techcrunch.com/feed/",
-    "https://news.ycombinator.com/rss"
+    "https://news.ycombinator.com/rss",
+    "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
   ]
 };
 
