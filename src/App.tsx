@@ -221,10 +221,14 @@ export default function App() {
       triggerAnalytics("notifications_permission_updated", { status: resp });
       
       if (resp === "granted") {
-        new Notification("News Radar alerts active", {
-          body: "You will be alerted pro-actively when new brief digests compile.",
-          icon: "/favicon.ico"
-        });
+        try {
+          new Notification("News Radar alerts active", {
+            body: "You will be alerted pro-actively when new brief digests compile.",
+            icon: "/favicon.ico"
+          });
+        } catch (e) {
+          console.warn("Failed to trigger desktop notification in sandboxed container:", e);
+        }
       }
     }
   };
@@ -299,12 +303,16 @@ export default function App() {
       await loadData();
       setPollingTrigger(prev => prev + 1);
       
-      if (Notification.permission === "granted") {
-        const topHeadline = data.cards?.[0]?.headline || "Intelligence Brief Compiled";
-        new Notification("News Radar: Briefing Compiled", {
-          body: `${topHeadline.substring(0, 60)}...`,
-          tag: "briefing-update"
-        });
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        try {
+          const topHeadline = data.cards?.[0]?.headline || "Intelligence Brief Compiled";
+          new Notification("News Radar: Briefing Compiled", {
+            body: `${topHeadline.substring(0, 60)}...`,
+            tag: "briefing-update"
+          });
+        } catch (e) {
+          console.warn("Failed to trigger desktop notification in sandboxed container:", e);
+        }
       }
     } catch (err: any) {
       setRadarError(err.message || "Refresh failed.");
@@ -355,8 +363,11 @@ export default function App() {
   const estimatedSecondsRemaining = unreadCount === 0 ? 0 : (unreadCount === totalStoriesCount ? 58 : Math.round(unreadCount * 11.6));
 
   useEffect(() => {
-    if (activeBriefing?.cards?.length && !activeCardId) {
-      setActiveCardId(activeBriefing.cards[0].id);
+    if (activeBriefing?.cards?.length) {
+      const hasActiveCard = activeBriefing.cards.some(c => c.id === activeCardId);
+      if (!hasActiveCard) {
+        setActiveCardId(activeBriefing.cards[0].id);
+      }
     }
   }, [activeBriefing, activeCardId]);
 

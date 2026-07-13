@@ -7,15 +7,28 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { DBManager } from "./server_db";
 import { Briefing, BriefingCard, Article } from "./src/types";
 
-// Initialize Gemini SDK with telemetry header requested in skills
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// Lazy-initialize Gemini SDK to ensure it picks up the latest API keys and supports settings changes seamlessly
+let aiClient: GoogleGenAI | null = null;
+let lastApiKey: string | undefined = undefined;
+
+function getGeminiClient(): GoogleGenAI {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key || key === "MY_GEMINI_API_KEY") {
+    throw new Error("GEMINI_API_KEY environment variable is not defined or is a placeholder.");
+  }
+  if (!aiClient || lastApiKey !== key) {
+    aiClient = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+    lastApiKey = key;
+  }
+  return aiClient;
+}
 
 // A robust list of premium current seed articles as a backup/fill-in source to guarantee amazing updates
 const SAMPLE_PRESETS: Omit<Article, "id">[] = [
@@ -125,11 +138,11 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
       const descMatch = item.match(/<description>([\s\S]*?)<\/description>/) || item.match(/<summary>([\s\S]*?)<\/summary>/) || item.match(/<content[^>]*>([\s\S]*?)<\/content>/);
       const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || item.match(/<updated>([\s\S]*?)<\/updated>/) || item.match(/<published>([\s\S]*?)<\/published>/);
 
-      if (titleMatch) {
+      if (titleMatch && titleMatch[1]) {
         const title = cleanXML(titleMatch[1]);
-        const url = linkMatch ? linkMatch[1] : `https://news.ycombinator.com`;
-        const content = descMatch ? cleanXML(descMatch[1]) : "No full summary available.";
-        const dateStr = dateMatch ? cleanXML(dateMatch[1]) : new Date().toISOString();
+        const url = (linkMatch && linkMatch[1]) ? linkMatch[1] : `https://news.ycombinator.com`;
+        const content = (descMatch && descMatch[1]) ? cleanXML(descMatch[1]) : "No full summary available.";
+        const dateStr = (dateMatch && dateMatch[1]) ? cleanXML(dateMatch[1]) : new Date().toISOString();
 
         articles.push({
           title,
@@ -256,7 +269,8 @@ Return your response strictly matching the schema.
     DBManager.addLiveLog("Phase 2: Invoking Gemini-3.5-Flash with responseSchema schema validation...", "info");
 
     try {
-      const result = await ai.models.generateContent({
+      const client = getGeminiClient();
+      const result = await client.models.generateContent({
         model: "gemini-3.5-flash",
         contents: promptText,
         config: {
