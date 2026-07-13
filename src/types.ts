@@ -32,6 +32,8 @@ export interface Briefing {
   generated_at: string;
   is_automated: boolean;
   cards: BriefingCard[];
+  scanned_count?: number;
+  target_read_time_seconds?: number;
 }
 
 export interface UserPreferences {
