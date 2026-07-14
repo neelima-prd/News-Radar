@@ -23,9 +23,9 @@ app.get("/api/health", (req, res) => {
 });
 
 // API: Get briefings
-app.get("/api/briefings", (req, res) => {
+app.get("/api/briefings", async (req, res) => {
   try {
-    const briefings = DBManager.getBriefings();
+    const briefings = await DBManager.getBriefings();
     res.json(briefings);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to retrieve briefings" });
@@ -43,7 +43,7 @@ app.post("/api/briefings/generate", async (req, res) => {
       });
     }
 
-    const { categories, custom_feeds } = DBManager.getPreferences();
+    const { categories, custom_feeds } = await DBManager.getPreferences();
     
     // 1. Fetch articles
     const rawArticles = await NewsService.fetchLatestArticles(custom_feeds);
@@ -52,10 +52,10 @@ app.post("/api/briefings/generate", async (req, res) => {
     const briefing = await NewsService.runRadarIntelligence(rawArticles, categories);
     
     // 3. Save briefing
-    DBManager.addBriefing(briefing);
+    await DBManager.addBriefing(briefing);
     
     // 4. Log analytics event
-    DBManager.addAnalyticsEvent("radar_sweep_triggered", {
+    await DBManager.addAnalyticsEvent("radar_sweep_triggered", {
       briefing_id: briefing.id,
       card_count: briefing.cards.length,
       category_filters: categories
@@ -69,16 +69,16 @@ app.post("/api/briefings/generate", async (req, res) => {
 });
 
 // API: User preferences
-app.get("/api/preferences", (req, res) => {
+app.get("/api/preferences", async (req, res) => {
   try {
-    const prefs = DBManager.getPreferences();
+    const prefs = await DBManager.getPreferences();
     res.json(prefs);
   } catch (err: any) {
     res.status(500).json({ error: "Failed to get user preferences" });
   }
 });
 
-app.put("/api/preferences", (req, res) => {
+app.put("/api/preferences", async (req, res) => {
   try {
     const { categories, frequency, custom_feeds } = req.body;
     
@@ -86,27 +86,27 @@ app.put("/api/preferences", (req, res) => {
       return res.status(400).json({ error: "Invalid preference schema" });
     }
 
-    DBManager.savePreferences({ categories, frequency, custom_feeds: custom_feeds || [] });
-    DBManager.addAnalyticsEvent("preferences_updated", { categories, frequency, feed_count: (custom_feeds || []).length });
+    await DBManager.savePreferences({ categories, frequency, custom_feeds: custom_feeds || [] });
+    await DBManager.addAnalyticsEvent("preferences_updated", { categories, frequency, feed_count: (custom_feeds || []).length });
     DBManager.addLiveLog("User preferences and custom feed configurations updated.", "success");
 
-    res.json({ ok: true, preferences: DBManager.getPreferences() });
+    res.json({ ok: true, preferences: await DBManager.getPreferences() });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to save user preferences" });
   }
 });
 
 // API: Feedback collector
-app.get("/api/feedback", (req, res) => {
+app.get("/api/feedback", async (req, res) => {
   try {
-    const feedbacks = DBManager.getFeedbacks();
+    const feedbacks = await DBManager.getFeedbacks();
     res.json(feedbacks);
   } catch (err: any) {
     res.status(500).json({ error: "Failed to load feedback listings" });
   }
 });
 
-app.post("/api/feedback", (req, res) => {
+app.post("/api/feedback", async (req, res) => {
   try {
     const { card_id, feedback_type, comment } = req.body;
     
@@ -122,8 +122,8 @@ app.post("/api/feedback", (req, res) => {
       created_at: new Date().toISOString()
     };
 
-    DBManager.addFeedback(feedback);
-    DBManager.addAnalyticsEvent("feedback_submitted", { card_id, feedback_type, has_comment: !!comment });
+    await DBManager.addFeedback(feedback);
+    await DBManager.addAnalyticsEvent("feedback_submitted", { card_id, feedback_type, has_comment: !!comment });
     DBManager.addLiveLog(`User submitted feedback response [${feedback_type.toUpperCase()}] for card ${card_id}.`, "info");
 
     res.json({ ok: true, feedback });
@@ -133,27 +133,27 @@ app.post("/api/feedback", (req, res) => {
 });
 
 // API: Get background logs
-app.get("/api/logs", (req, res) => {
-  res.json(DBManager.getLiveLogs());
+app.get("/api/logs", async (req, res) => {
+  res.json(await DBManager.getLiveLogs());
 });
 
-app.post("/api/logs/clear", (req, res) => {
-  DBManager.clearLiveLogs();
+app.post("/api/logs/clear", async (req, res) => {
+  await DBManager.clearLiveLogs();
   res.json({ ok: true });
 });
 
 // API: Capture custom analytics event (e.g. from the client clicks for audit tracer)
-app.get("/api/analytics", (req, res) => {
-  res.json(DBManager.getAnalyticsEvents());
+app.get("/api/analytics", async (req, res) => {
+  res.json(await DBManager.getAnalyticsEvents());
 });
 
-app.post("/api/analytics", (req, res) => {
+app.post("/api/analytics", async (req, res) => {
   try {
     const { event_name, metadata } = req.body;
     if (!event_name) {
       return res.status(400).json({ error: "event_name is required" });
     }
-    DBManager.addAnalyticsEvent(event_name, metadata || {});
+    await DBManager.addAnalyticsEvent(event_name, metadata || {});
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to register analytics trace" });

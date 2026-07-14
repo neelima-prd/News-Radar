@@ -163,7 +163,6 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
 export class NewsService {
   static async fetchLatestArticles(customFeeds: string[]): Promise<Omit<Article, "id">[]> {
     DBManager.addLiveLog("Starting News Retrieval Engine...", "info");
-    const articles: Omit<Article, "id">[] = [];
 
     const feedsToScrape = customFeeds.length > 0 ? customFeeds : [
       "https://techcrunch.com/feed/",
@@ -171,7 +170,7 @@ export class NewsService {
       "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
     ];
 
-    for (const url of feedsToScrape) {
+    const fetchPromises = feedsToScrape.map(async (url) => {
       try {
         let sourceName = "General News";
         if (url.includes("techcrunch")) sourceName = "TechCrunch";
@@ -188,9 +187,9 @@ export class NewsService {
 
         DBManager.addLiveLog(`Fetching ${sourceName} RSS feed from ${url}`, "info");
 
-        // Fetch feed with timeout and a clear User-Agent
+        // Fetch feed with shorter timeout (3s) to prevent Vercel Serverless Function timeouts
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000); // 7s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
 
         const response = await fetch(url, {
           headers: {
@@ -210,12 +209,23 @@ export class NewsService {
 
         if (parsed.length > 0) {
           DBManager.addLiveLog(`Successfully ingested ${parsed.length} raw stories from ${sourceName}`, "success");
-          articles.push(...parsed);
+          return parsed;
         } else {
           DBManager.addLiveLog(`Zero news items found in ${sourceName} feed XML.`, "warning");
+          return [];
         }
       } catch (err: any) {
         DBManager.addLiveLog(`Feed fetch failed for ${url}: ${err.message || err}. Falling back to internal seed pool for this source.`, "warning");
+        return [];
+      }
+    });
+
+    const results = await Promise.allSettled(fetchPromises);
+    const articles: Omit<Article, "id">[] = [];
+
+    for (const res of results) {
+      if (res.status === "fulfilled" && res.value) {
+        articles.push(...res.value);
       }
     }
 

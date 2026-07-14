@@ -633,14 +633,14 @@ export default function App() {
               }`}>
                 <span className={theme === "dark" ? "text-slate-400" : "text-gray-500"}>Enable Alerts</span>
                 <button
-                  onClick={() => setIsAlertsEnabled(!isAlertsEnabled)}
+                  onClick={handleToggleNotifications}
                   className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    isAlertsEnabled ? "bg-blue-600" : "bg-gray-400"
+                    notificationPermission === "granted" ? "bg-blue-600" : "bg-gray-400"
                   }`}
                 >
                   <span
                     className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      isAlertsEnabled ? "translate-x-4" : "translate-x-0"
+                      notificationPermission === "granted" ? "translate-x-4" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -793,9 +793,21 @@ export default function App() {
                     <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                       {totalStoriesCount} Important Updates Since Your Last Brief
                     </span>
-                    <span className={`block text-[11px] font-bold mt-1 ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
-                      Progress: {readStoriesCount} of {totalStoriesCount} stories read
-                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className={`block text-[11px] font-bold ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
+                        Progress: {readStoriesCount} of {totalStoriesCount} stories read
+                      </span>
+                      {readStoriesCount > 0 && (
+                        <button
+                          onClick={() => setReadStoryIds([])}
+                          className={`text-[10px] font-bold underline cursor-pointer hover:no-underline ${
+                            theme === "dark" ? "text-slate-400 hover:text-cyan-400" : "text-gray-500 hover:text-blue-600"
+                          }`}
+                        >
+                          (Reset Progress)
+                        </button>
+                      )}
+                    </div>
                     <span className={`block text-[11px] font-bold ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
                       Estimated Time Remaining: {estimatedSecondsRemaining} seconds
                     </span>

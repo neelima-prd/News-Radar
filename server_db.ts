@@ -5,9 +5,38 @@
 
 import fs from "fs";
 import path from "path";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Briefing, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types";
 
-const DB_FILE = path.join(process.cwd(), "db.json");
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient | null {
+  if (supabaseClient) return supabaseClient;
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key || url.includes("your-project") || key.includes("your-anon-key") || url === "MY_SUPABASE_URL" || key === "MY_SUPABASE_ANON_KEY") {
+    return null;
+  }
+
+  try {
+    supabaseClient = createClient(url, key, {
+      auth: {
+        persistSession: false
+      }
+    });
+    return supabaseClient;
+  } catch (err) {
+    console.warn("Failed to initialize Supabase client:", err);
+    return null;
+  }
+}
+
+
+const DB_FILE = process.env.VERCEL
+  ? "/tmp/db.json"
+  : path.join(process.cwd(), "db.json");
 
 interface DBStructure {
   briefings: Briefing[];
@@ -134,6 +163,12 @@ const seedAnalytics = (): AnalyticsEvent[] => {
 export class DBManager {
   private static loadDB(): DBStructure {
     try {
+      if (process.env.VERCEL && !fs.existsSync("/tmp/db.json")) {
+        const templatePath = path.join(process.cwd(), "db.json");
+        if (fs.existsSync(templatePath)) {
+          fs.copyFileSync(templatePath, "/tmp/db.json");
+        }
+      }
       if (!fs.existsSync(DB_FILE)) {
         const initialDB: DBStructure = {
           briefings: seedBriefings(),
@@ -180,62 +215,262 @@ export class DBManager {
     }
   }
 
-  static getBriefings(): Briefing[] {
+  static async getBriefings(): Promise<Briefing[]> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("briefings")
+          .select("*")
+          .order("generated_at", { ascending: false });
+
+        if (error) {
+          console.warn("Supabase getBriefings warning, falling back to local file DB:", error.message);
+        } else if (data && data.length > 0) {
+          return data.map((b: any) => ({
+            id: b.id,
+            generated_at: b.generated_at,
+            is_automated: b.is_automated,
+            cards: typeof b.cards === "string" ? JSON.parse(b.cards) : b.cards,
+            scanned_count: b.scanned_count,
+            target_read_time_seconds: b.target_read_time_seconds
+          }));
+        }
+      } catch (err: any) {
+        console.warn("Supabase getBriefings exception, falling back:", err.message || err);
+      }
+    }
+
     const db = this.loadDB();
     return db.briefings.sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
   }
 
-  static addBriefing(briefing: Briefing) {
+  static async addBriefing(briefing: Briefing): Promise<void> {
     const db = this.loadDB();
     db.briefings.push(briefing);
     this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("briefings")
+          .insert([{
+            id: briefing.id,
+            generated_at: briefing.generated_at,
+            is_automated: briefing.is_automated,
+            cards: briefing.cards, // Supabase jsonb auto-handles arrays/objects
+            scanned_count: briefing.scanned_count || 0,
+            target_read_time_seconds: briefing.target_read_time_seconds || 0
+          }]);
+
+        if (error) {
+          console.warn("Supabase addBriefing warning:", error.message);
+        }
+      } catch (err: any) {
+        console.warn("Supabase addBriefing exception:", err.message || err);
+      }
+    }
   }
 
-  static getPreferences(): UserPreferences {
+  static async getPreferences(): Promise<UserPreferences> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("preferences")
+          .select("*")
+          .eq("id", "default")
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Supabase getPreferences warning, falling back:", error.message);
+        } else if (data) {
+          return {
+            categories: typeof data.categories === "string" ? JSON.parse(data.categories) : data.categories,
+            frequency: data.frequency,
+            custom_feeds: typeof data.custom_feeds === "string" ? JSON.parse(data.custom_feeds) : data.custom_feeds
+          };
+        }
+      } catch (err: any) {
+        console.warn("Supabase getPreferences exception, falling back:", err.message || err);
+      }
+    }
+
     const db = this.loadDB();
     return db.preferences || DEFAULT_PREFS;
   }
 
-  static savePreferences(preferences: UserPreferences) {
+  static async savePreferences(preferences: UserPreferences): Promise<void> {
     const db = this.loadDB();
     db.preferences = preferences;
     this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("preferences")
+          .upsert({
+            id: "default",
+            categories: preferences.categories,
+            frequency: preferences.frequency,
+            custom_feeds: preferences.custom_feeds,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.warn("Supabase savePreferences warning:", error.message);
+        }
+      } catch (err: any) {
+        console.warn("Supabase savePreferences exception:", err.message || err);
+      }
+    }
   }
 
-  static getFeedbacks(): Feedback[] {
+  static async getFeedbacks(): Promise<Feedback[]> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("feedback")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.warn("Supabase getFeedbacks warning, falling back:", error.message);
+        } else if (data) {
+          return data;
+        }
+      } catch (err: any) {
+        console.warn("Supabase getFeedbacks exception, falling back:", err.message || err);
+      }
+    }
+
     const db = this.loadDB();
     return db.feedbacks;
   }
 
-  static addFeedback(feedback: Feedback) {
+  static async addFeedback(feedback: Feedback): Promise<void> {
     const db = this.loadDB();
     db.feedbacks.push(feedback);
     this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("feedback")
+          .insert([{
+            id: feedback.id,
+            card_id: feedback.card_id,
+            feedback_type: feedback.feedback_type,
+            comment: feedback.comment || "",
+            created_at: feedback.created_at
+          }]);
+
+        if (error) {
+          console.warn("Supabase addFeedback warning:", error.message);
+        }
+      } catch (err: any) {
+        console.warn("Supabase addFeedback exception:", err.message || err);
+      }
+    }
   }
 
-  static getAnalyticsEvents(): AnalyticsEvent[] {
+  static async getAnalyticsEvents(): Promise<AnalyticsEvent[]> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("analytics_events")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.warn("Supabase getAnalyticsEvents warning, falling back:", error.message);
+        } else if (data) {
+          return data.map((d: any) => ({
+            id: d.id,
+            event_name: d.event_name,
+            metadata: typeof d.metadata === "string" ? JSON.parse(d.metadata) : d.metadata,
+            created_at: d.created_at
+          }));
+        }
+      } catch (err: any) {
+        console.warn("Supabase getAnalyticsEvents exception, falling back:", err.message || err);
+      }
+    }
+
     const db = this.loadDB();
     return db.analytics_events.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
-  static addAnalyticsEvent(event_name: string, metadata: Record<string, any>) {
+  static async addAnalyticsEvent(event_name: string, metadata: Record<string, any>): Promise<void> {
+    const id = "evt-" + Math.random().toString(36).substr(2, 9);
+    const created_at = new Date().toISOString();
+
     const db = this.loadDB();
     const newEvent: AnalyticsEvent = {
-      id: "evt-" + Math.random().toString(36).substr(2, 9),
+      id,
       event_name,
       metadata,
-      created_at: new Date().toISOString()
+      created_at
     };
     db.analytics_events.push(newEvent);
     this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("analytics_events")
+          .insert([{
+            id,
+            event_name,
+            metadata,
+            created_at
+          }]);
+
+        if (error) {
+          console.warn("Supabase addAnalyticsEvent warning:", error.message);
+        }
+      } catch (err: any) {
+        console.warn("Supabase addAnalyticsEvent exception:", err.message || err);
+      }
+    }
   }
 
-  static getLiveLogs(): LiveRadarLog[] {
+  static async getLiveLogs(): Promise<LiveRadarLog[]> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("live_logs")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.warn("Supabase getLiveLogs warning, falling back:", error.message);
+        } else if (data) {
+          return data.map((d: any) => ({
+            timestamp: d.timestamp,
+            message: d.message,
+            type: d.type
+          }));
+        }
+      } catch (err: any) {
+        console.warn("Supabase getLiveLogs exception, falling back:", err.message || err);
+      }
+    }
+
     const db = this.loadDB();
     return db.live_logs.slice(-50); // Keep last 50 logs
   }
 
   static addLiveLog(message: string, type: "info" | "success" | "warning" | "error" = "info") {
+    // 1. Local logging
     const db = this.loadDB();
     db.live_logs.push({
       timestamp: new Date().toISOString(),
@@ -243,9 +478,30 @@ export class DBManager {
       type
     });
     this.saveDB(db);
+
+    // 2. Supabase logging (background promise, completely non-blocking for callers)
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      (async () => {
+        try {
+          const { error } = await supabase
+            .from("live_logs")
+            .insert([{
+              timestamp: new Date().toISOString(),
+              message,
+              type
+            }]);
+          if (error) {
+            console.warn("Supabase addLiveLog background warning:", error.message);
+          }
+        } catch (err: any) {
+          console.warn("Supabase addLiveLog background exception:", err.message || err);
+        }
+      })();
+    }
   }
 
-  static clearLiveLogs() {
+  static async clearLiveLogs(): Promise<void> {
     const db = this.loadDB();
     db.live_logs = [
       {
@@ -255,5 +511,29 @@ export class DBManager {
       }
     ];
     this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("live_logs")
+          .delete()
+          .neq("timestamp", "1970-01-01T00:00:00Z"); // Safe way to clear table without triggers blocking
+
+        if (error) {
+          console.warn("Supabase clearLiveLogs warning:", error.message);
+        }
+
+        await supabase
+          .from("live_logs")
+          .insert([{
+            timestamp: new Date().toISOString(),
+            message: "Radar logs flushed. Ready to scan.",
+            type: "info"
+          }]);
+      } catch (err: any) {
+        console.warn("Supabase clearLiveLogs exception:", err.message || err);
+      }
+    }
   }
 }
