@@ -273,23 +273,24 @@ export class DBManager {
     }
   }
 
-  static async getPreferences(): Promise<UserPreferences> {
+  static async getPreferences(userEmail?: string): Promise<UserPreferences> {
     const supabase = getSupabaseClient();
+    const userId = userEmail || "default";
     if (supabase) {
       try {
         const { data, error } = await supabase
           .from("preferences")
           .select("*")
-          .eq("id", "default")
+          .eq("id", userId)
           .maybeSingle();
 
         if (error) {
           console.warn("Supabase getPreferences warning, falling back:", error.message);
         } else if (data) {
           return {
-            categories: typeof data.categories === "string" ? JSON.parse(data.categories) : data.categories,
-            frequency: data.frequency,
-            custom_feeds: typeof data.custom_feeds === "string" ? JSON.parse(data.custom_feeds) : data.custom_feeds
+            categories: typeof data.categories === "string" ? JSON.parse(data.categories) : (data.categories || []),
+            frequency: data.frequency || "daily",
+            custom_feeds: typeof data.custom_feeds === "string" ? JSON.parse(data.custom_feeds) : (data.custom_feeds || [])
           };
         }
       } catch (err: any) {
@@ -301,18 +302,19 @@ export class DBManager {
     return db.preferences || DEFAULT_PREFS;
   }
 
-  static async savePreferences(preferences: UserPreferences): Promise<void> {
+  static async savePreferences(preferences: UserPreferences, userEmail?: string): Promise<void> {
     const db = this.loadDB();
     db.preferences = preferences;
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
+    const userId = userEmail || "default";
     if (supabase) {
       try {
         const { error } = await supabase
           .from("preferences")
           .upsert({
-            id: "default",
+            id: userId,
             categories: preferences.categories,
             frequency: preferences.frequency,
             custom_feeds: preferences.custom_feeds,

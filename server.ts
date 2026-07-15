@@ -22,6 +22,14 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+// API: Config probe for Supabase public keys
+app.get("/api/config", (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || null,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || null
+  });
+});
+
 // API: Get briefings
 app.get("/api/briefings", async (req, res) => {
   try {
@@ -43,7 +51,8 @@ app.post("/api/briefings/generate", async (req, res) => {
       });
     }
 
-    const { categories, custom_feeds } = await DBManager.getPreferences();
+    const userEmail = req.headers["x-user-email"] as string | undefined;
+    const { categories, custom_feeds } = await DBManager.getPreferences(userEmail);
     
     // 1. Fetch articles
     const rawArticles = await NewsService.fetchLatestArticles(custom_feeds);
@@ -71,7 +80,8 @@ app.post("/api/briefings/generate", async (req, res) => {
 // API: User preferences
 app.get("/api/preferences", async (req, res) => {
   try {
-    const prefs = await DBManager.getPreferences();
+    const userEmail = req.headers["x-user-email"] as string | undefined;
+    const prefs = await DBManager.getPreferences(userEmail);
     res.json(prefs);
   } catch (err: any) {
     res.status(500).json({ error: "Failed to get user preferences" });
@@ -81,16 +91,17 @@ app.get("/api/preferences", async (req, res) => {
 app.put("/api/preferences", async (req, res) => {
   try {
     const { categories, frequency, custom_feeds } = req.body;
+    const userEmail = req.headers["x-user-email"] as string | undefined;
     
     if (!Array.isArray(categories) || !frequency) {
       return res.status(400).json({ error: "Invalid preference schema" });
     }
 
-    await DBManager.savePreferences({ categories, frequency, custom_feeds: custom_feeds || [] });
+    await DBManager.savePreferences({ categories, frequency, custom_feeds: custom_feeds || [] }, userEmail);
     await DBManager.addAnalyticsEvent("preferences_updated", { categories, frequency, feed_count: (custom_feeds || []).length });
     DBManager.addLiveLog("User preferences and custom feed configurations updated.", "success");
 
-    res.json({ ok: true, preferences: await DBManager.getPreferences() });
+    res.json({ ok: true, preferences: await DBManager.getPreferences(userEmail) });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to save user preferences" });
   }

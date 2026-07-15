@@ -29,7 +29,8 @@ import {
   Zap,
   Moon,
   Sun,
-  BookOpen
+  BookOpen,
+  LogOut
 } from "lucide-react";
 import { Briefing, UserPreferences } from "./types";
 import { InsightCard } from "./components/InsightCard";
@@ -80,11 +81,31 @@ export function RadarLogo({ size = 32, theme = "dark" }: { size?: number; theme?
 export default function App() {
   // App state
   const [briefings, setBriefings] = useState<Briefing[]>([]);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    categories: ["AI & ML", "Startups & VC", "Biotech", "Fintech", "Green Tech"],
+    frequency: "daily",
+    custom_feeds: [
+      "https://techcrunch.com/feed/",
+      "https://news.ycombinator.com/rss",
+      "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
+    ]
+  });
   const [loadingRadar, setLoadingRadar] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [isKeyError, setIsKeyError] = useState(false);
   const [pollingTrigger, setPollingTrigger] = useState(0);
+
+  // Supabase Auth and Config states
+  const [supabase, setSupabase] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [hasSupabaseConfig, setHasSupabaseConfig] = useState(true);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   // Theme support
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -116,7 +137,7 @@ export default function App() {
   // Preference editor drawer state (Notion-style collapsible drawer)
   const [showPreferencesPanel, setShowPreferencesPanel] = useState(false);
 
-  const userEmail = "neelimaneel3@gmail.com";
+  const userEmail = session?.user?.email || "neelimaneel3@gmail.com";
   
   const getUserName = () => {
     if (!userEmail) return "Director";
@@ -197,15 +218,22 @@ export default function App() {
     return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
   };
 
-  const loadData = async () => {
+  const loadData = async (activeSession?: any) => {
+    const currentSession = activeSession !== undefined ? activeSession : session;
+    const email = currentSession?.user?.email || "";
+    const headers: Record<string, string> = {};
+    if (email) {
+      headers["x-user-email"] = email;
+    }
+
     try {
-      const briefingsRes = await fetch("/api/briefings");
+      const briefingsRes = await fetch("/api/briefings", { headers });
       if (briefingsRes.ok) {
         const briefs = await briefingsRes.json();
         setBriefings(briefs);
       }
 
-      const prefRes = await fetch("/api/preferences");
+      const prefRes = await fetch("/api/preferences", { headers });
       if (prefRes.ok) {
         const prefs = await prefRes.json();
         setPreferences(prefs);
@@ -216,11 +244,68 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadData();
+    let unsubscribeFn: (() => void) | undefined;
+
+    const initAuth = async () => {
+      try {
+        const configRes = await fetch("/api/config");
+        if (configRes.ok) {
+          const config = await configRes.json();
+          if (config.supabaseUrl && config.supabaseAnonKey) {
+            const { createClient } = await import("@supabase/supabase-js");
+            const client = createClient(config.supabaseUrl, config.supabaseAnonKey);
+            setSupabase(client);
+            setHasSupabaseConfig(true);
+
+            // Get current session
+            const { data: { session: initialSession } } = await client.auth.getSession();
+            setSession(initialSession);
+            if (initialSession) {
+              await loadData(initialSession);
+            }
+
+            // Listen to auth changes
+            const { data: { subscription } } = client.auth.onAuthStateChange((_event, newSession) => {
+              setSession(newSession);
+              if (newSession) {
+                loadData(newSession);
+              }
+            });
+
+            unsubscribeFn = () => {
+              subscription.unsubscribe();
+            };
+            setAuthLoading(false);
+          } else {
+            // No Supabase config, bypass auth screen
+            setHasSupabaseConfig(false);
+            setAuthLoading(false);
+            await loadData(null);
+          }
+        } else {
+          setHasSupabaseConfig(false);
+          setAuthLoading(false);
+          await loadData(null);
+        }
+      } catch (err) {
+        console.error("Auth initialization failed, bypassing to local mode:", err);
+        setHasSupabaseConfig(false);
+        setAuthLoading(false);
+        await loadData(null);
+      }
+    };
+
+    initAuth();
     triggerAnalytics("session_started", { 
       device_width: typeof window !== "undefined" ? window.innerWidth : 1024,
       timestamp: new Date().toISOString()
     });
+
+    return () => {
+      if (unsubscribeFn) {
+        unsubscribeFn();
+      }
+    };
   }, []);
 
   const triggerAnalytics = async (event_name: string, metadata: Record<string, any>) => {
@@ -263,7 +348,6 @@ export default function App() {
   };
 
   const handleCategoryPreferenceToggle = (category: string) => {
-    if (!preferences) return;
     let updatedCats = [...preferences.categories];
     if (updatedCats.includes(category)) {
       updatedCats = updatedCats.filter(c => c !== category);
@@ -278,7 +362,6 @@ export default function App() {
   };
 
   const handleFrequencyChange = (freq: "hourly" | "daily" | "weekly") => {
-    if (!preferences) return;
     handleSavePreferences({
       ...preferences,
       frequency: freq
@@ -287,10 +370,18 @@ export default function App() {
   };
 
   const handleSavePreferences = async (updated: UserPreferences) => {
+    const email = session?.user?.email || "";
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (email) {
+      headers["x-user-email"] = email;
+    }
+
     try {
       const response = await fetch("/api/preferences", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(updated)
       });
       if (response.ok) {
@@ -316,9 +407,16 @@ export default function App() {
       subscribed_categories: preferences?.categories || []
     });
 
+    const email = session?.user?.email || "";
+    const headers: Record<string, string> = {};
+    if (email) {
+      headers["x-user-email"] = email;
+    }
+
     try {
       const response = await fetch("/api/briefings/generate", {
-        method: "POST"
+        method: "POST",
+        headers
       });
       const data = await response.json();
       
@@ -486,6 +584,237 @@ export default function App() {
     triggerAnalytics("export_brief_pdf", { brief_id: activeBriefing?.id });
   };
 
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 select-none transition-colors duration-200 ${
+        theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-[#fcfdfd] text-[#111827]"
+      }`}>
+        <div className="flex flex-col items-center gap-6 max-w-sm text-center">
+          <div className="relative flex items-center justify-center animate-pulse">
+            <div className="absolute inset-0 bg-cyan-500/20 rounded-full filter blur-xl"></div>
+            <RadarLogo size={80} theme={theme} />
+          </div>
+          <div className="space-y-2">
+            <h2 className={`text-lg font-black tracking-widest uppercase ${
+              theme === "dark" ? "text-white" : "text-gray-900"
+            }`}>
+              NEWS RADAR
+            </h2>
+            <p className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest">
+              Initializing Core Intelligence Systems...
+            </p>
+          </div>
+          <RefreshCw size={16} className="text-cyan-400 animate-spin mt-2" />
+        </div>
+      </div>
+    );
+  }
+
+  if (hasSupabaseConfig && !session) {
+    const handleAuthSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!authEmail || !authPassword) {
+        setAuthError("Please fill in all security parameters.");
+        return;
+      }
+      if (authPassword.length < 6) {
+        setAuthError("Security password must be at least 6 characters.");
+        return;
+      }
+
+      setAuthError(null);
+      setAuthSuccessMsg(null);
+      setIsSigningIn(true);
+
+      try {
+        if (authMode === "signin") {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: authEmail,
+            password: authPassword
+          });
+          if (error) {
+            setAuthError(error.message);
+          }
+        } else {
+          const { error } = await supabase.auth.signUp({
+            email: authEmail,
+            password: authPassword
+          });
+          if (error) {
+            setAuthError(error.message);
+          } else {
+            setAuthSuccessMsg("Access credentials registered! Please verify using the email link or sign in.");
+            setAuthMode("signin");
+          }
+        }
+      } catch (err: any) {
+        setAuthError(err.message || "Authentication transmission failed.");
+      } finally {
+        setIsSigningIn(false);
+      }
+    };
+
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 selection:bg-[#00E5FF]/20 transition-colors duration-200 relative ${
+        theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-[#fcfdfd] text-[#111827]"
+      }`}>
+        {/* Glow ambient background blur */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#00E5FF]/5 rounded-full filter blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-md relative z-10">
+          <div className={`p-8 md:p-10 rounded-3xl border shadow-2xl transition-all duration-200 ${
+            theme === "dark" 
+              ? "bg-[#0c111d] border-slate-800/80 text-slate-300" 
+              : "bg-white border-gray-250 text-gray-700 shadow-md"
+          }`}>
+            
+            {/* Header / Brand */}
+            <div className="flex flex-col items-center text-center space-y-4 mb-8">
+              <div className="relative flex items-center justify-center">
+                {theme === "dark" && (
+                  <div className="absolute inset-0 bg-[#00E5FF]/25 rounded-full filter blur-lg animate-pulse" />
+                )}
+                <RadarLogo size={64} theme={theme} />
+              </div>
+              <div className="space-y-1">
+                <h1 className={`text-2xl font-black uppercase tracking-tight ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}>
+                  NEWS RADAR
+                </h1>
+                <p className="text-[10px] text-[#5C827D] font-extrabold uppercase tracking-widest leading-none">
+                  Intelligence Access Portal
+                </p>
+              </div>
+            </div>
+
+            {/* Error or Success feedback */}
+            {authError && (
+              <div className="mb-6 p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 text-red-400">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {authSuccessMsg && (
+              <div className="mb-6 p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-405">
+                <Check size={14} className="shrink-0 mt-0.5" />
+                <span>{authSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleAuthSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className={`block text-xs font-black uppercase tracking-wider ${
+                  theme === "dark" ? "text-slate-400" : "text-gray-500"
+                }`}>
+                  Intelligence Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
+                    <User size={14} />
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className={`w-full text-xs font-bold pl-10 pr-4 py-3 rounded-xl border focus:outline-none cursor-text transition ${
+                      theme === "dark"
+                        ? "bg-[#111726] border-slate-800 text-white focus:border-[#00E5FF]/50"
+                        : "bg-gray-50 border-gray-250 text-gray-900 focus:border-blue-550/50"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`block text-xs font-black uppercase tracking-wider ${
+                  theme === "dark" ? "text-slate-400" : "text-gray-500"
+                }`}>
+                  Security Access Password
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
+                    <Zap size={14} />
+                  </span>
+                  <input
+                    type="password"
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full text-xs font-bold pl-10 pr-4 py-3 rounded-xl border focus:outline-none cursor-text transition ${
+                      theme === "dark"
+                        ? "bg-[#111726] border-slate-800 text-white focus:border-[#00E5FF]/50"
+                        : "bg-gray-50 border-gray-250 text-gray-900 focus:border-blue-550/50"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSigningIn}
+                className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
+                  theme === "dark"
+                    ? "bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-slate-950 shadow-[#00E5FF]/10"
+                    : "bg-blue-600 hover:bg-blue-650 text-white shadow-blue-500/15"
+                }`}
+              >
+                {isSigningIn ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : authMode === "signin" ? (
+                  "Unlock Radar Core"
+                ) : (
+                  "Generate Access Keys"
+                )}
+              </button>
+            </form>
+
+            {/* Mode Switcher */}
+            <div className="mt-6 pt-6 border-t border-slate-800/60 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode(authMode === "signin" ? "signup" : "signin");
+                  setAuthError(null);
+                  setAuthSuccessMsg(null);
+                }}
+                className={`text-xs font-bold hover:underline cursor-pointer ${
+                  theme === "dark" ? "text-cyan-400 hover:text-cyan-300" : "text-blue-600 hover:text-blue-500"
+                }`}
+              >
+                {authMode === "signin" 
+                  ? "New Analyst? Request Access Credentials" 
+                  : "Have Access Credentials? Unlock Portal"}
+              </button>
+            </div>
+
+          </div>
+
+          {/* Theme switcher on auth page */}
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              type="button"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition ${
+                theme === "dark" 
+                  ? "bg-slate-800/50 hover:bg-slate-800 border-slate-700/60 text-slate-300" 
+                  : "bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-600"
+              }`}
+            >
+              {theme === "dark" ? <Sun size={11} /> : <Moon size={11} />}
+              <span>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen flex font-sans antialiased selection:bg-sky-500/30 transition-colors duration-200 ${
       theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-[#fcfdfd] text-[#111827]"
@@ -577,19 +906,42 @@ export default function App() {
               </div>
             </div>
 
-            {/* In-profile Light/Dark mode Switcher Toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              type="button"
-              className={`p-2 rounded-xl border cursor-pointer transition shrink-0 ${
-                theme === "dark" 
-                  ? "bg-slate-800 hover:bg-slate-700 border-slate-700 text-yellow-300" 
-                  : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-750"
-              }`}
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* In-profile Light/Dark mode Switcher Toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                type="button"
+                className={`p-2 rounded-xl border cursor-pointer transition ${
+                  theme === "dark" 
+                    ? "bg-slate-800 hover:bg-slate-700 border-slate-700 text-yellow-300" 
+                    : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-750"
+                }`}
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
+              </button>
+
+              {/* Supabase Logout Button */}
+              {session && (
+                <button
+                  onClick={async () => {
+                    if (supabase) {
+                      await supabase.auth.signOut();
+                      setSession(null);
+                    }
+                  }}
+                  type="button"
+                  className={`p-2 rounded-xl border cursor-pointer transition ${
+                    theme === "dark"
+                      ? "bg-red-950/20 hover:bg-red-900/40 border-red-900/30 text-red-400"
+                      : "bg-red-50 hover:bg-red-100 border-red-200 text-red-600"
+                  }`}
+                  title="Sign Out"
+                >
+                  <LogOut size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </aside>
