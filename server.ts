@@ -5,7 +5,6 @@
 
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { DBManager } from "./server_db.js";
 import { NewsService } from "./news_service.js";
 import { UserPreferences, Feedback } from "./src/types.js";
@@ -208,6 +207,7 @@ app.post("/api/analytics", async (req, res) => {
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     // Vite middleware for development HMR-less hot rebuild triggers
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
