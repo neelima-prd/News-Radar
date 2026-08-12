@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { randomUUID } from "crypto";
 import { DBManager } from "./server_db.js";
 import { Briefing, BriefingCard, Article } from "./src/types.js";
 
@@ -328,7 +329,7 @@ Return your response strictly matching the schema.
         throw new Error("AI response was not valid JSON format.");
       }
 
-      const briefingId = "brief-" + Math.random().toString(36).substr(2, 9);
+      const briefingId = randomUUID();
       const processedCards: BriefingCard[] = generatedCards.map((card: any, index: number) => {
         const priority: "TOP STORY" | "IMPORTANT" | "OTHER" = 
           index === 0 ? "TOP STORY" : (card.priority === "TOP STORY" || card.priority === "IMPORTANT" ? "IMPORTANT" : "OTHER");
@@ -336,7 +337,7 @@ Return your response strictly matching the schema.
         const category = card.category === "Startups" ? "Startups" : "Technology";
 
         return {
-          id: `card-${briefingId}-${index}`,
+          id: randomUUID(),
           briefing_id: briefingId,
           rank: index + 1,
           priority,
@@ -380,7 +381,7 @@ Return your response strictly matching the schema.
     } catch (error: any) {
       DBManager.addLiveLog(`AI processing note: ${error.message || error}. Compiling briefing using fallback model.`, "warning");
       
-      const briefingId = "brief-fall-" + Math.random().toString(36).substr(2, 9);
+      const briefingId = randomUUID();
       const sourcePool = articles.length > 0 ? articles : SAMPLE_PRESETS;
       const selectedArticles = sourcePool.slice(0, 5);
       
@@ -395,7 +396,7 @@ Return your response strictly matching the schema.
         }
 
         return {
-          id: `card-${briefingId}-${index}`,
+          id: randomUUID(),
           briefing_id: briefingId,
           rank: index + 1,
           priority,

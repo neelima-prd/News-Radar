@@ -5,8 +5,9 @@
 
 import fs from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { Briefing, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types.js";
+import { Briefing, BriefingCard, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types.js";
 
 let supabaseClient: SupabaseClient | null = null;
 let supabaseDisabled = false;
@@ -23,7 +24,7 @@ function getSupabaseClient(): SupabaseClient | null {
   if (supabaseClient) return supabaseClient;
 
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 
   if (
     !url ||
@@ -70,6 +71,10 @@ function handleSupabaseError(context: string, err: any) {
   }
 }
 
+function isValidUUID(str?: string): boolean {
+  if (!str) return false;
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
+}
 
 const DB_FILE = process.env.VERCEL
   ? "/tmp/db.json"
@@ -115,15 +120,22 @@ function safeParseArray(val: any): string[] {
   return [];
 }
 
+const SEED_BRIEFING_ID = "11111111-1111-4111-8111-111111111111";
+const SEED_CARD_IDS = [
+  "22222222-2222-4222-8222-222222222201",
+  "22222222-2222-4222-8222-222222222202",
+  "22222222-2222-4222-8222-222222222203",
+  "22222222-2222-4222-8222-222222222204",
+  "22222222-2222-4222-8222-222222222205"
+];
+
 // Seed initial briefings to populate the UI beautifully if empty
 const seedBriefings = (): Briefing[] => {
   const now = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
 
   return [
     {
-      id: "briefing-today",
+      id: SEED_BRIEFING_ID,
       generated_at: now.toISOString(),
       is_automated: true,
       scanned_count: 127,
@@ -132,8 +144,8 @@ const seedBriefings = (): Briefing[] => {
       target_read_time_seconds: 58,
       cards: [
         {
-          id: "card-t1",
-          briefing_id: "briefing-today",
+          id: SEED_CARD_IDS[0],
+          briefing_id: SEED_BRIEFING_ID,
           rank: 1,
           priority: "TOP STORY",
           headline: "OpenAI Announces Advanced Realtime Voice and Multi-Modal Agent APIs",
@@ -152,8 +164,8 @@ const seedBriefings = (): Briefing[] => {
           isRead: false
         },
         {
-          id: "card-t2",
-          briefing_id: "briefing-today",
+          id: SEED_CARD_IDS[1],
+          briefing_id: SEED_BRIEFING_ID,
           rank: 2,
           priority: "IMPORTANT",
           headline: "Y Combinator Introduces AI-Driven Auto-Matching for Co-Founders",
@@ -171,8 +183,8 @@ const seedBriefings = (): Briefing[] => {
           isRead: false
         },
         {
-          id: "card-t3",
-          briefing_id: "briefing-today",
+          id: SEED_CARD_IDS[2],
+          briefing_id: SEED_BRIEFING_ID,
           rank: 3,
           priority: "IMPORTANT",
           headline: "Anthropic Releases Claude 3.5 Sonnet Artifacts for Team Collaboration",
@@ -190,8 +202,8 @@ const seedBriefings = (): Briefing[] => {
           isRead: false
         },
         {
-          id: "card-t4",
-          briefing_id: "briefing-today",
+          id: SEED_CARD_IDS[3],
+          briefing_id: SEED_BRIEFING_ID,
           rank: 4,
           priority: "OTHER",
           headline: "TSMC Breaks Ground on Sub-2nm Semiconductor Fab in Saxony",
@@ -209,8 +221,8 @@ const seedBriefings = (): Briefing[] => {
           isRead: false
         },
         {
-          id: "card-t5",
-          briefing_id: "briefing-today",
+          id: SEED_CARD_IDS[4],
+          briefing_id: SEED_BRIEFING_ID,
           rank: 5,
           priority: "OTHER",
           headline: "Early-Stage AI Compiler Startup Raises $12M Pre-Seed Round",
@@ -243,7 +255,7 @@ const seedAnalytics = (): AnalyticsEvent[] => {
     {
       id: "ae2",
       event_name: "briefing_viewed",
-      metadata: { briefing_id: "briefing-yesterday" },
+      metadata: { briefing_id: SEED_BRIEFING_ID },
       created_at: new Date(Date.now() - 3600000 * 12).toISOString()
     }
   ];
@@ -264,8 +276,8 @@ export class DBManager {
           preferences: DEFAULT_PREFS,
           feedbacks: [
             {
-              id: "f1",
-              briefing_item_id: "card-y1",
+              id: "33333333-3333-4333-8333-333333333333",
+              briefing_item_id: SEED_CARD_IDS[0],
               feedback_type: "useful",
               created_at: new Date(Date.now() - 3600000 * 10).toISOString()
             }
@@ -309,20 +321,40 @@ export class DBManager {
       try {
         const { data, error } = await supabase
           .from("briefings")
-          .select("*")
+          .select("*, briefing_items(*)")
           .order("generated_at", { ascending: false });
 
         if (error) {
           handleSupabaseError("getBriefings", error);
         } else if (data && data.length > 0) {
-          return data.map((b: any) => ({
-            id: b.id,
-            generated_at: b.generated_at,
-            is_automated: b.is_automated,
-            cards: typeof b.cards === "string" ? JSON.parse(b.cards) : b.cards,
-            scanned_count: b.scanned_count,
-            target_read_time_seconds: b.target_read_time_seconds
-          }));
+          return data.map((b: any) => {
+            const items = Array.isArray(b.briefing_items) ? b.briefing_items : [];
+            items.sort((a: any, b: any) => (a.rank || 0) - (b.rank || 0));
+
+            const cards: BriefingCard[] = items.map((item: any) => ({
+              id: item.id,
+              briefing_id: item.briefing_id,
+              rank: item.rank,
+              priority: item.priority || "IMPORTANT",
+              headline: item.headline,
+              summary: item.summary,
+              why_it_matters: item.why_it_matters,
+              category: item.category,
+              why_selected: safeParseArray(item.why_selected),
+              source_articles: safeParseArray(item.source_articles || []),
+              isRead: false
+            }));
+
+            return {
+              id: b.id,
+              generated_at: b.generated_at,
+              is_automated: false,
+              cards: cards.length > 0 ? cards : (b.cards ? (typeof b.cards === "string" ? JSON.parse(b.cards) : b.cards) : []),
+              scanned_count: b.article_count_analyzed || b.scanned_count || 0,
+              target_read_time_seconds: b.estimated_read_seconds || b.target_read_time_seconds || 0,
+              selected_story_count: b.selected_story_count || cards.length
+            };
+          });
         }
       } catch (err: any) {
         handleSupabaseError("getBriefings", err);
@@ -341,19 +373,45 @@ export class DBManager {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { error } = await supabase
+        const briefingId = isValidUUID(briefing.id) ? briefing.id : randomUUID();
+
+        // 1. Insert briefing header row
+        const { error: bError } = await supabase
           .from("briefings")
           .insert([{
-            id: briefing.id,
+            id: briefingId,
             generated_at: briefing.generated_at,
-            is_automated: briefing.is_automated,
-            cards: briefing.cards, // Supabase jsonb auto-handles arrays/objects
-            scanned_count: briefing.scanned_count || 0,
-            target_read_time_seconds: briefing.target_read_time_seconds || 0
+            status: "ready",
+            article_count_analyzed: briefing.scanned_count || 0,
+            estimated_read_seconds: briefing.target_read_time_seconds || 0,
+            selected_story_count: briefing.cards?.length || 0
           }]);
 
-        if (error) {
-          handleSupabaseError("addBriefing", error);
+        if (bError) {
+          handleSupabaseError("addBriefing header", bError);
+        }
+
+        // 2. Insert briefing items
+        if (briefing.cards && briefing.cards.length > 0) {
+          const itemsToInsert = briefing.cards.map((card, idx) => ({
+            id: isValidUUID(card.id) ? card.id : randomUUID(),
+            briefing_id: briefingId,
+            rank: card.rank || (idx + 1),
+            priority: card.priority || "IMPORTANT",
+            category: card.category || "Technology",
+            headline: card.headline,
+            summary: card.summary,
+            why_it_matters: card.why_it_matters,
+            why_selected: card.why_selected || []
+          }));
+
+          const { error: biError } = await supabase
+            .from("briefing_items")
+            .insert(itemsToInsert);
+
+          if (biError) {
+            handleSupabaseError("addBriefing items", biError);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("addBriefing", err);
@@ -363,8 +421,8 @@ export class DBManager {
 
   static async getPreferences(userEmail?: string): Promise<UserPreferences> {
     const supabase = getSupabaseClient();
-    const userId = userEmail || "default";
-    if (supabase) {
+    const userId = isValidUUID(userEmail) ? userEmail : null;
+    if (supabase && userId) {
       try {
         const { data, error } = await supabase
           .from("user_preferences")
@@ -396,8 +454,8 @@ export class DBManager {
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
-    const userId = userEmail || "default";
-    if (supabase) {
+    const userId = isValidUUID(userEmail) ? userEmail : null;
+    if (supabase && userId) {
       try {
         const { error } = await supabase
           .from("user_preferences")
@@ -440,7 +498,7 @@ export class DBManager {
     return db.feedbacks;
   }
 
-  static async addFeedback(feedback: Feedback): Promise<void> {
+  static async addFeedback(feedback: Feedback, userEmail?: string): Promise<void> {
     const db = this.loadDB();
     db.feedbacks.push(feedback);
     this.saveDB(db);
@@ -448,17 +506,27 @@ export class DBManager {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { error } = await supabase
-          .from("feedback")
-          .insert([{
-            id: feedback.id,
-            briefing_item_id: feedback.briefing_item_id,
-            feedback_type: feedback.feedback_type,
-            created_at: feedback.created_at
-          }]);
+        const userId = isValidUUID(userEmail) ? userEmail : null;
+        const feedbackId = isValidUUID(feedback.id) ? feedback.id : randomUUID();
 
-        if (error) {
-          handleSupabaseError("addFeedback", error);
+        if (isValidUUID(feedback.briefing_item_id)) {
+          const insertPayload: any = {
+            id: feedbackId,
+            briefing_item_id: feedback.briefing_item_id,
+            feedback_type: feedback.feedback_type === "useful" || feedback.feedback_type === "not_relevant" ? feedback.feedback_type : "useful",
+            created_at: feedback.created_at || new Date().toISOString()
+          };
+          if (userId) {
+            insertPayload.user_id = userId;
+          }
+
+          const { error } = await supabase
+            .from("feedback")
+            .insert([insertPayload]);
+
+          if (error) {
+            handleSupabaseError("addFeedback", error);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("addFeedback", err);
@@ -494,7 +562,7 @@ export class DBManager {
     return db.analytics_events.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
-  static async addAnalyticsEvent(event_name: string, metadata: Record<string, any>): Promise<void> {
+  static async addAnalyticsEvent(event_name: string, metadata: Record<string, any>, userEmail?: string): Promise<void> {
     const id = "evt-" + Math.random().toString(36).substr(2, 9);
     const created_at = new Date().toISOString();
 
@@ -511,14 +579,20 @@ export class DBManager {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
+        const userId = isValidUUID(userEmail) ? userEmail : null;
+        const insertPayload: any = {
+          id,
+          event_name,
+          metadata,
+          created_at
+        };
+        if (userId) {
+          insertPayload.user_id = userId;
+        }
+
         const { error } = await supabase
           .from("analytics_events")
-          .insert([{
-            id,
-            event_name,
-            metadata,
-            created_at
-          }]);
+          .insert([insertPayload]);
 
         if (error) {
           handleSupabaseError("addAnalyticsEvent", error);
@@ -591,12 +665,13 @@ export class DBManager {
 
   static async getReadStoryIds(userId?: string): Promise<string[]> {
     const supabase = getSupabaseClient();
-    if (supabase && userId) {
+    const validUserId = isValidUUID(userId) ? userId : null;
+    if (supabase && validUserId) {
       try {
         const { data, error } = await supabase
           .from("user_story_state")
           .select("briefing_item_id, status")
-          .eq("user_id", userId)
+          .eq("user_id", validUserId)
           .eq("status", "read");
 
         if (error) {
@@ -630,12 +705,13 @@ export class DBManager {
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
-    if (supabase && userId) {
+    const validUserId = isValidUUID(userId) ? userId : null;
+    if (supabase && validUserId && isValidUUID(cardId)) {
       try {
         const { error } = await supabase
           .from("user_story_state")
           .upsert({
-            user_id: userId,
+            user_id: validUserId,
             briefing_item_id: cardId,
             status: isRead ? "read" : "unread",
             read_at: isRead ? new Date().toISOString() : null,
@@ -668,7 +744,7 @@ export class DBManager {
         const { error } = await supabase
           .from("live_logs")
           .delete()
-          .neq("timestamp", "1970-01-01T00:00:00Z"); // Safe way to clear table without triggers blocking
+          .neq("timestamp", "1970-01-01T00:00:00Z");
 
         if (error) {
           console.warn("Supabase clearLiveLogs warning:", error.message);
