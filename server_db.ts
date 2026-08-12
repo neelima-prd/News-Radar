@@ -9,14 +9,33 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Briefing, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types";
 
 let supabaseClient: SupabaseClient | null = null;
+let supabaseDisabled = false;
+let lastSupabaseCheckTime = 0;
 
 function getSupabaseClient(): SupabaseClient | null {
+  if (supabaseDisabled) {
+    if (Date.now() - lastSupabaseCheckTime < 60000) {
+      return null;
+    }
+    supabaseDisabled = false;
+  }
+
   if (supabaseClient) return supabaseClient;
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
-  if (!url || !key || url.includes("your-project") || key.includes("your-anon-key") || url === "MY_SUPABASE_URL" || key === "MY_SUPABASE_ANON_KEY") {
+  if (
+    !url ||
+    !key ||
+    !url.startsWith("http") ||
+    url.includes("your-project") ||
+    url.includes("your-supabase") ||
+    url.includes("example.com") ||
+    key.includes("your-anon-key") ||
+    url === "MY_SUPABASE_URL" ||
+    key === "MY_SUPABASE_ANON_KEY"
+  ) {
     return null;
   }
 
@@ -33,6 +52,24 @@ function getSupabaseClient(): SupabaseClient | null {
   }
 }
 
+function handleSupabaseError(context: string, err: any) {
+  const msg = typeof err === "string" ? err : err?.message || String(err);
+  if (
+    msg.includes("fetch failed") ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("ENOTFOUND") ||
+    msg.includes("ECONNREFUSED") ||
+    msg.includes("TypeError")
+  ) {
+    supabaseDisabled = true;
+    supabaseClient = null;
+    lastSupabaseCheckTime = Date.now();
+    console.info(`[Database] Supabase endpoint unreachable (${context}), falling back to local database store.`);
+  } else {
+    console.warn(`[Database] Supabase ${context} warning: ${msg}`);
+  }
+}
+
 
 const DB_FILE = process.env.VERCEL
   ? "/tmp/db.json"
@@ -44,99 +81,151 @@ interface DBStructure {
   feedbacks: Feedback[];
   analytics_events: AnalyticsEvent[];
   live_logs: LiveRadarLog[];
+  user_story_states?: Record<string, string[]>;
 }
 
 const DEFAULT_PREFS: UserPreferences = {
-  categories: ["AI & ML", "Startups & VC", "Biotech", "Fintech", "Green Tech"],
-  frequency: "daily",
-  custom_feeds: [
-    "https://techcrunch.com/feed/",
-    "https://news.ycombinator.com/rss",
-    "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
-  ]
+  topics: ["technology", "startups"],
+  briefing_frequency_hours: 6
 };
+
+function safeParseArray(val: any): string[] {
+  if (Array.isArray(val)) {
+    return val;
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (_) {}
+    }
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      // Postgres text array format: {"item1","item2"} or {item1,item2}
+      return trimmed
+        .slice(1, -1)
+        .split(",")
+        .map(item => item.trim().replace(/^"|"$/g, "").replace(/\\"/g, '"'))
+        .filter(Boolean);
+    }
+    // Comma-separated fallback
+    return trimmed.split(",").map(item => item.trim()).filter(Boolean);
+  }
+  return [];
+}
 
 // Seed initial briefings to populate the UI beautifully if empty
 const seedBriefings = (): Briefing[] => {
+  const now = new Date();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const prevDay = new Date();
-  prevDay.setDate(prevDay.getDate() - 2);
-
   return [
     {
-      id: "briefing-yesterday",
-      generated_at: yesterday.toISOString(),
+      id: "briefing-today",
+      generated_at: now.toISOString(),
       is_automated: true,
+      scanned_count: 127,
+      cluster_count: 42,
+      selected_story_count: 5,
+      target_read_time_seconds: 58,
       cards: [
         {
-          id: "card-y1",
-          briefing_id: "briefing-yesterday",
-          headline: "OpenAI Announces Advanced Audio Mode and Voice Customization APIs",
-          summary: "OpenAI has rolled out a suite of dynamic audio capabilities enabling real-time conversational latencies under 300ms. These tools give developers the ability to build natural multi-turn verbal interactions with custom voice presets and pitch modulation control.",
-          why_it_matters: "This marks a massive transition from structured text prompting to zero-latency natural audio dialogues. It speeds up the adoption of conversational AI agents across customer service, virtual companions, and interactive accessibility software.",
-          category: "AI & ML",
-          relevance: 95,
-          importance: 90,
-          popularity: 88,
-          score: Math.round(95 * 0.4 + 90 * 0.4 + 88 * 0.2),
+          id: "card-t1",
+          briefing_id: "briefing-today",
+          rank: 1,
+          priority: "TOP STORY",
+          headline: "OpenAI Announces Advanced Realtime Voice and Multi-Modal Agent APIs",
+          summary: "OpenAI has rolled out a suite of dynamic audio capabilities enabling real-time conversational latencies under 300ms. These tools give developers the ability to build natural multi-turn verbal interactions with custom voice presets.",
+          why_it_matters: "This marks a massive transition from structured text prompting to zero-latency natural audio dialogues. It accelerates the adoption of conversational AI agents across customer service and interactive software.",
+          category: "Technology",
+          why_selected: [
+            "Matches your Technology interest",
+            "High industry impact across developer tools",
+            "Covered by 4 trusted tech publications"
+          ],
           source_articles: [
             { title: "OpenAI releases Realtime API for multi-modal audio applications", url: "https://techcrunch.com", source: "TechCrunch" },
             { title: "Show HN: Building voice bots with OpenAI's new audio endpoint", url: "https://news.ycombinator.com", source: "Hacker News" }
-          ]
+          ],
+          isRead: false
         },
         {
-          id: "card-y2",
-          briefing_id: "briefing-yesterday",
-          headline: "Venture Inflow into Green Tech Surges as Fusion Prototypes Advance",
-          summary: "New seed funding rounds for inertial confinement fusion and commercial hydrogen refueling grids hit a record $2.4B this quarter. Key startups including Helion and H2Drive reported breakthroughs in containment field stability and cell efficiency.",
-          why_it_matters: "Private capital is shifting heavily towards ultra-deep tech infrastructure, driven by rising data center energy needs. Heavy tech giants are committing future power-purchase agreements, signaling pre-market commercialization of fusion energy.",
-          category: "Green Tech",
-          relevance: 88,
-          importance: 86,
-          popularity: 75,
-          score: Math.round(88 * 0.4 + 86 * 0.4 + 75 * 0.2),
-          source_articles: [
-            { title: "Green Energy funding breaks quarterly records as AI demands power", url: "https://venturebeat.com", source: "VentureBeat" }
-          ]
-        },
-        {
-          id: "card-y3",
-          briefing_id: "briefing-yesterday",
+          id: "card-t2",
+          briefing_id: "briefing-today",
+          rank: 2,
+          priority: "IMPORTANT",
           headline: "Y Combinator Introduces AI-Driven Auto-Matching for Co-Founders",
-          summary: "The flagship startup accelerator rolled out an automated directory pairing co-founders using graph embeddings and complementary skill vectors. The system evaluates previous work telemetry, personality index, and equity preferences to map optimal pairings.",
-          why_it_matters: "Finding compatible co-founders remains the single largest point of failure for pre-seed startups. Automating raw match-making reduces friction and broadens the pipeline for solo technical founders trying to build structural businesses.",
-          category: "Startups & VC",
-          relevance: 85,
-          importance: 82,
-          popularity: 80,
-          score: Math.round(85 * 0.4 + 82 * 0.4 + 80 * 0.2),
+          summary: "The flagship startup accelerator rolled out an automated directory pairing co-founders using graph embeddings and complementary skill vectors. The system evaluates previous work experience, skills, and startup preferences.",
+          why_it_matters: "Finding compatible co-founders remains the single largest point of failure for early-stage startups. Automating founder match-making reduces friction and broadens the pipeline for solo technical founders.",
+          category: "Startups",
+          why_selected: [
+            "Matches your Startups interest",
+            "Significant update for early-stage founders",
+            "Covered by YC and TechCrunch"
+          ],
           source_articles: [
-            { title: "YC Launches new directory tool to pairing founders by skill embeddings", url: "https://techcrunch.com", source: "TechCrunch" }
-          ]
-        }
-      ]
-    },
-    {
-      id: "briefing-prev",
-      generated_at: prevDay.toISOString(),
-      is_automated: true,
-      cards: [
+            { title: "YC Launches new directory tool to pair founders by skill embeddings", url: "https://techcrunch.com", source: "TechCrunch" }
+          ],
+          isRead: false
+        },
         {
-          id: "card-p1",
-          briefing_id: "briefing-prev",
-          headline: "NVIDIA Quantum Simulation Suite Enters Public Beta",
-          summary: "NVIDIA unveiled its flagship developer toolkit allowing standard CUDA GPU architectures to emulate up to 40 qubits of noise-resistant quantum circuits, accelerating chemical computation and cryptographic hardening trials.",
-          why_it_matters: "This democratizes early quantum research by letting teams run heavy simulation workloads using existing cloud GPU clusters instead of waiting for physical cryo-cooled quantum rigs.",
-          category: "AI & ML",
-          relevance: 92,
-          importance: 89,
-          popularity: 82,
-          score: Math.round(92 * 0.4 + 89 * 0.4 + 82 * 0.2),
+          id: "card-t3",
+          briefing_id: "briefing-today",
+          rank: 3,
+          priority: "IMPORTANT",
+          headline: "Anthropic Releases Claude 3.5 Sonnet Artifacts for Team Collaboration",
+          summary: "Anthropic has expanded Artifacts to organization workspaces, enabling engineers and designers to co-edit code snippets, UI wireframes, and vector diagrams in real-time inside the AI chat interface.",
+          why_it_matters: "Transforms AI from an isolated chat box into a shared interactive canvas, directly embedding generative models into daily engineering and design workflows.",
+          category: "Technology",
+          why_selected: [
+            "Matches your Technology interest",
+            "High adoption among startup teams",
+            "Covered by VentureBeat and TechCrunch"
+          ],
           source_articles: [
-            { title: "NVIDIA launches public beta of quantum SDK on Hopper architecture", url: "https://venturebeat.com", source: "VentureBeat" }
-          ]
+            { title: "Anthropic brings interactive Artifacts canvas to enterprise teams", url: "https://venturebeat.com", source: "VentureBeat" }
+          ],
+          isRead: false
+        },
+        {
+          id: "card-t4",
+          briefing_id: "briefing-today",
+          rank: 4,
+          priority: "OTHER",
+          headline: "TSMC Breaks Ground on Sub-2nm Semiconductor Fab in Saxony",
+          summary: "TSMC has officially started foundations for its modern semiconductor foundry in Germany, targeting production of sub-2nm chip channels by late 2027 to stabilize European chip supply grids.",
+          why_it_matters: "Secures sovereign semiconductor fabrication capacity for autonomous vehicle processors, edge robotics, and localized AI compute hardware.",
+          category: "Technology",
+          why_selected: [
+            "Matches your Technology interest",
+            "Critical hardware supply chain milestone",
+            "Covered by major financial & tech outlets"
+          ],
+          source_articles: [
+            { title: "TSMC breaks ground on sub-2nm fab in Europe", url: "https://news.ycombinator.com", source: "Hacker News" }
+          ],
+          isRead: false
+        },
+        {
+          id: "card-t5",
+          briefing_id: "briefing-today",
+          rank: 5,
+          priority: "OTHER",
+          headline: "Early-Stage AI Compiler Startup Raises $12M Pre-Seed Round",
+          summary: "A stealth-mode startup from the latest Y Combinator batch announced a $12M round to build open-source compilers that translate PyTorch neural weights directly onto microchip gate arrays.",
+          why_it_matters: "Drops compute latencies in handheld edge devices by up to 80x compared to cloud server inferencing, lowering operational costs for robotics startups.",
+          category: "Startups",
+          why_selected: [
+            "Matches your Startups interest",
+            "Venture funding trend in hardware compilers",
+            "Covered by TechCrunch and Hacker News"
+          ],
+          source_articles: [
+            { title: "YC edge compiler startup raises $12M pre-seed", url: "https://techcrunch.com", source: "TechCrunch" }
+          ],
+          isRead: false
         }
       ]
     }
@@ -176,9 +265,8 @@ export class DBManager {
           feedbacks: [
             {
               id: "f1",
-              card_id: "card-y1",
-              feedback_type: "up",
-              comment: "Excellent summary of the voice latency improvements. Exactly what I needed.",
+              briefing_item_id: "card-y1",
+              feedback_type: "useful",
               created_at: new Date(Date.now() - 3600000 * 10).toISOString()
             }
           ],
@@ -225,7 +313,7 @@ export class DBManager {
           .order("generated_at", { ascending: false });
 
         if (error) {
-          console.warn("Supabase getBriefings warning, falling back to local file DB:", error.message);
+          handleSupabaseError("getBriefings", error);
         } else if (data && data.length > 0) {
           return data.map((b: any) => ({
             id: b.id,
@@ -237,7 +325,7 @@ export class DBManager {
           }));
         }
       } catch (err: any) {
-        console.warn("Supabase getBriefings exception, falling back:", err.message || err);
+        handleSupabaseError("getBriefings", err);
       }
     }
 
@@ -265,10 +353,10 @@ export class DBManager {
           }]);
 
         if (error) {
-          console.warn("Supabase addBriefing warning:", error.message);
+          handleSupabaseError("addBriefing", error);
         }
       } catch (err: any) {
-        console.warn("Supabase addBriefing exception:", err.message || err);
+        handleSupabaseError("addBriefing", err);
       }
     }
   }
@@ -279,22 +367,22 @@ export class DBManager {
     if (supabase) {
       try {
         const { data, error } = await supabase
-          .from("preferences")
+          .from("user_preferences")
           .select("*")
-          .eq("id", userId)
+          .eq("user_id", userId)
           .maybeSingle();
 
         if (error) {
-          console.warn("Supabase getPreferences warning, falling back:", error.message);
+          handleSupabaseError("getPreferences", error);
         } else if (data) {
           return {
-            categories: typeof data.categories === "string" ? JSON.parse(data.categories) : (data.categories || []),
-            frequency: data.frequency || "daily",
-            custom_feeds: typeof data.custom_feeds === "string" ? JSON.parse(data.custom_feeds) : (data.custom_feeds || [])
+            topics: safeParseArray(data.topics || ["technology", "startups"]),
+            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any,
+            notifications_enabled: data.notifications_enabled ?? true
           };
         }
       } catch (err: any) {
-        console.warn("Supabase getPreferences exception, falling back:", err.message || err);
+        handleSupabaseError("getPreferences", err);
       }
     }
 
@@ -312,20 +400,19 @@ export class DBManager {
     if (supabase) {
       try {
         const { error } = await supabase
-          .from("preferences")
+          .from("user_preferences")
           .upsert({
-            id: userId,
-            categories: preferences.categories,
-            frequency: preferences.frequency,
-            custom_feeds: preferences.custom_feeds,
+            user_id: userId,
+            briefing_frequency_hours: preferences.briefing_frequency_hours,
+            notifications_enabled: preferences.notifications_enabled,
             updated_at: new Date().toISOString()
           });
 
         if (error) {
-          console.warn("Supabase savePreferences warning:", error.message);
+          handleSupabaseError("savePreferences", error);
         }
       } catch (err: any) {
-        console.warn("Supabase savePreferences exception:", err.message || err);
+        handleSupabaseError("savePreferences", err);
       }
     }
   }
@@ -340,12 +427,12 @@ export class DBManager {
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.warn("Supabase getFeedbacks warning, falling back:", error.message);
+          handleSupabaseError("getFeedbacks", error);
         } else if (data) {
           return data;
         }
       } catch (err: any) {
-        console.warn("Supabase getFeedbacks exception, falling back:", err.message || err);
+        handleSupabaseError("getFeedbacks", err);
       }
     }
 
@@ -365,17 +452,16 @@ export class DBManager {
           .from("feedback")
           .insert([{
             id: feedback.id,
-            card_id: feedback.card_id,
+            briefing_item_id: feedback.briefing_item_id,
             feedback_type: feedback.feedback_type,
-            comment: feedback.comment || "",
             created_at: feedback.created_at
           }]);
 
         if (error) {
-          console.warn("Supabase addFeedback warning:", error.message);
+          handleSupabaseError("addFeedback", error);
         }
       } catch (err: any) {
-        console.warn("Supabase addFeedback exception:", err.message || err);
+        handleSupabaseError("addFeedback", err);
       }
     }
   }
@@ -390,7 +476,7 @@ export class DBManager {
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.warn("Supabase getAnalyticsEvents warning, falling back:", error.message);
+          handleSupabaseError("getAnalyticsEvents", error);
         } else if (data) {
           return data.map((d: any) => ({
             id: d.id,
@@ -400,7 +486,7 @@ export class DBManager {
           }));
         }
       } catch (err: any) {
-        console.warn("Supabase getAnalyticsEvents exception, falling back:", err.message || err);
+        handleSupabaseError("getAnalyticsEvents", err);
       }
     }
 
@@ -435,10 +521,10 @@ export class DBManager {
           }]);
 
         if (error) {
-          console.warn("Supabase addAnalyticsEvent warning:", error.message);
+          handleSupabaseError("addAnalyticsEvent", error);
         }
       } catch (err: any) {
-        console.warn("Supabase addAnalyticsEvent exception:", err.message || err);
+        handleSupabaseError("addAnalyticsEvent", err);
       }
     }
   }
@@ -454,7 +540,7 @@ export class DBManager {
           .limit(50);
 
         if (error) {
-          console.warn("Supabase getLiveLogs warning, falling back:", error.message);
+          handleSupabaseError("getLiveLogs", error);
         } else if (data) {
           return data.map((d: any) => ({
             timestamp: d.timestamp,
@@ -463,7 +549,7 @@ export class DBManager {
           }));
         }
       } catch (err: any) {
-        console.warn("Supabase getLiveLogs exception, falling back:", err.message || err);
+        handleSupabaseError("getLiveLogs", err);
       }
     }
 
@@ -494,12 +580,74 @@ export class DBManager {
               type
             }]);
           if (error) {
-            console.warn("Supabase addLiveLog background warning:", error.message);
+            handleSupabaseError("addLiveLog background", error);
           }
         } catch (err: any) {
-          console.warn("Supabase addLiveLog background exception:", err.message || err);
+          handleSupabaseError("addLiveLog background", err);
         }
       })();
+    }
+  }
+
+  static async getReadStoryIds(userId?: string): Promise<string[]> {
+    const supabase = getSupabaseClient();
+    if (supabase && userId) {
+      try {
+        const { data, error } = await supabase
+          .from("user_story_state")
+          .select("briefing_item_id, status")
+          .eq("user_id", userId)
+          .eq("status", "read");
+
+        if (error) {
+          handleSupabaseError("getReadStoryIds", error);
+        } else if (data) {
+          return data.map((d: any) => d.briefing_item_id);
+        }
+      } catch (err: any) {
+        handleSupabaseError("getReadStoryIds", err);
+      }
+    }
+
+    const db = this.loadDB();
+    const uid = userId || "default";
+    return db.user_story_states?.[uid] || [];
+  }
+
+  static async updateStoryState(cardId: string, isRead: boolean, userId?: string): Promise<void> {
+    const uid = userId || "default";
+    const db = this.loadDB();
+    if (!db.user_story_states) db.user_story_states = {};
+    if (!db.user_story_states[uid]) db.user_story_states[uid] = [];
+
+    if (isRead) {
+      if (!db.user_story_states[uid].includes(cardId)) {
+        db.user_story_states[uid].push(cardId);
+      }
+    } else {
+      db.user_story_states[uid] = db.user_story_states[uid].filter(id => id !== cardId);
+    }
+    this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    if (supabase && userId) {
+      try {
+        const { error } = await supabase
+          .from("user_story_state")
+          .upsert({
+            user_id: userId,
+            briefing_item_id: cardId,
+            status: isRead ? "read" : "unread",
+            read_at: isRead ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          handleSupabaseError("updateStoryState", error);
+        }
+      } catch (err: any) {
+        handleSupabaseError("updateStoryState", err);
+      }
     }
   }
 

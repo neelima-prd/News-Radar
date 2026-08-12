@@ -30,7 +30,10 @@ import {
   Moon,
   Sun,
   BookOpen,
-  LogOut
+  LogOut,
+  Layers,
+  Filter,
+  CheckCircle2
 } from "lucide-react";
 import { Briefing, UserPreferences } from "./types";
 import { InsightCard } from "./components/InsightCard";
@@ -50,7 +53,6 @@ export function RadarLogo({ size = 32, theme = "dark" }: { size?: number; theme?
       className="shrink-0"
     >
       <defs>
-        {/* Glowing neon filter mimicking Stitch image styling */}
         <filter id="radar-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation={isDark ? "3" : "1.8"} result="blur" />
           <feMerge>
@@ -61,16 +63,13 @@ export function RadarLogo({ size = 32, theme = "dark" }: { size?: number; theme?
         </filter>
       </defs>
 
-      {/* Center glowing circular transmitter node */}
       <circle cx="50" cy="50" r="7.5" fill={primaryColor} filter="url(#radar-neon-glow)" />
 
-      {/* Left side concentric circular radar signals radiating outwards (C-shaped) */}
       <circle cx="50" cy="50" r="15" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="47.1 47.1" transform="rotate(90, 50, 50)" filter="url(#radar-neon-glow)" />
       <circle cx="50" cy="50" r="25" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="87.2 69.8" transform="rotate(80, 50, 50)" filter="url(#radar-neon-glow)" />
       <circle cx="50" cy="50" r="35" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="134.4 85.5" transform="rotate(70, 50, 50)" filter="url(#radar-neon-glow)" />
       <circle cx="50" cy="50" r="45" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="188.5 94.2" transform="rotate(60, 50, 50)" filter="url(#radar-neon-glow)" />
 
-      {/* Right side concentric circular radar signals radiating outwards (parenthesis-shaped) */}
       <circle cx="50" cy="50" r="18" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="44.0 69.1" transform="rotate(-70, 50, 50)" filter="url(#radar-neon-glow)" />
       <circle cx="50" cy="50" r="28" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="73.3 102.6" transform="rotate(-75, 50, 50)" filter="url(#radar-neon-glow)" />
       <circle cx="50" cy="50" r="38" stroke={primaryColor} strokeWidth="4" strokeLinecap="round" strokeDasharray="106.1 132.6" transform="rotate(-80, 50, 50)" filter="url(#radar-neon-glow)" />
@@ -82,13 +81,9 @@ export default function App() {
   // App state
   const [briefings, setBriefings] = useState<Briefing[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>({
-    categories: ["AI & ML", "Startups & VC", "Biotech", "Fintech", "Green Tech"],
-    frequency: "daily",
-    custom_feeds: [
-      "https://techcrunch.com/feed/",
-      "https://news.ycombinator.com/rss",
-      "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
-    ]
+    topics: ["technology", "startups"],
+    briefing_frequency_hours: 6,
+    notifications_enabled: true
   });
   const [loadingRadar, setLoadingRadar] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
@@ -99,13 +94,6 @@ export default function App() {
   const [supabase, setSupabase] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [hasSupabaseConfig, setHasSupabaseConfig] = useState(true);
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
   // Theme support
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -131,100 +119,27 @@ export default function App() {
     } catch (_) {}
   }, [readStoryIds]);
 
-  // Notification Status
-  const [isAlertsEnabled, setIsAlertsEnabled] = useState(true);
-
-  // Preference editor drawer state (Notion-style collapsible drawer)
+  // Preference editor drawer state
   const [showPreferencesPanel, setShowPreferencesPanel] = useState(false);
 
-  const userEmail = session?.user?.email || "neelimaneel3@gmail.com";
-  
-  const getUserName = () => {
-    if (!userEmail) return "Director";
-    const localPart = userEmail.split("@")[0];
-    if (localPart.toLowerCase().startsWith("neelimaneel")) {
-      return "Neelima";
-    }
-    const cleanName = localPart.replace(/[^a-zA-Z]/g, '');
-    if (!cleanName) return "Director";
-    return cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
-  };
-
-  const [notificationPermission, setNotificationPermission] = useState<string>(
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "default"
-  );
-
   // Time stamp state
-  const [timeState, setTimeState] = useState({
-    dateStr: "August 15, 2026",
-    timeStr: "09:42 AM GMT",
-    minutesAgoStr: "5 minutes ago"
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  const getCategoryDisplayLabel = (cat: string) => {
-    switch (cat) {
-      case "AI & ML": return "Technology";
-      case "Startups & VC": return "Startups";
-      default: return cat;
-    }
-  };
-
-  // Deterministic helper to get scanned articles count per briefing
-  const getScannedCount = (briefing: Briefing | null | undefined) => {
-    if (!briefing) return 127;
-    if (briefing.scanned_count) return briefing.scanned_count;
-    // Generate a stable, realistic number of scanned articles based on the briefing ID hash
-    let hash = 0;
-    const idStr = briefing.id || "default";
-    for (let i = 0; i < idStr.length; i++) {
-      hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return 85 + (Math.abs(hash) % 75); // Range: 85 to 159
-  };
-
-  // Deterministic helper to get target read time based on word count
-  const getTargetReadTimeSeconds = (briefing: Briefing | null | undefined) => {
-    if (!briefing) return 58;
-    if (briefing.target_read_time_seconds) return briefing.target_read_time_seconds;
-    // Calculate based on actual word count of the cards (3.3 words per second / 200 WPM)
-    let wordCount = 0;
-    if (briefing.cards) {
-      briefing.cards.forEach(card => {
-        wordCount += (card.headline || "").split(/\s+/).length;
-        wordCount += (card.summary || "").split(/\s+/).length;
-        wordCount += (card.why_it_matters || "").split(/\s+/).length;
-      });
-    }
-    return Math.max(30, Math.round(wordCount / 3.3) || 58);
-  };
-
-  const activeCategories = [
-    { id: "AI & ML", label: "Technology" },
-    { id: "Startups & VC", label: "Startups" },
-    { id: "Biotech", label: "Biotech" },
-    { id: "Fintech", label: "Fintech" },
-    { id: "Green Tech", label: "Green Tech" }
+  const availableTopics = [
+    { id: "technology", label: "Technology", active: true },
+    { id: "startups", label: "Startups", active: true },
+    { id: "ai_ml", label: "AI & Machine Learning", active: false, comingSoon: true },
+    { id: "india_biz", label: "India Business & Technology", active: false, comingSoon: true },
+    { id: "business", label: "Business", active: false, comingSoon: true },
+    { id: "markets", label: "Markets", active: false, comingSoon: true }
   ];
-
-  const upcomingCategories = [
-    { label: "India Business" },
-    { label: "Markets" },
-    { label: "SaaS" },
-    { label: "Hardware" }
-  ];
-
-  const formatArchiveDate = (isoStr: string) => {
-    const d = new Date(isoStr);
-    return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
-  };
 
   const loadData = async (activeSession?: any) => {
     const currentSession = activeSession !== undefined ? activeSession : session;
-    const email = currentSession?.user?.email || "";
-    const headers: Record<string, string> = {};
-    if (email) {
-      headers["x-user-email"] = email;
-    }
+    const userId = currentSession?.user?.id || "default";
+    const headers: Record<string, string> = {
+      "x-user-email": userId
+    };
 
     try {
       const briefingsRes = await fetch("/api/briefings", { headers });
@@ -238,8 +153,16 @@ export default function App() {
         const prefs = await prefRes.json();
         setPreferences(prefs);
       }
+
+      const stateRes = await fetch("/api/story_state", { headers });
+      if (stateRes.ok) {
+        const readIds = await stateRes.json();
+        if (Array.isArray(readIds) && readIds.length > 0) {
+          setReadStoryIds(readIds);
+        }
+      }
     } catch (e) {
-      console.error("Error fetching state:", e);
+      console.warn("Notice: Fetching state falling back to local defaults:", e);
     }
   };
 
@@ -252,60 +175,62 @@ export default function App() {
         if (configRes.ok) {
           const config = await configRes.json();
           if (config.supabaseUrl && config.supabaseAnonKey) {
-            const { createClient } = await import("@supabase/supabase-js");
-            const client = createClient(config.supabaseUrl, config.supabaseAnonKey);
-            setSupabase(client);
-            setHasSupabaseConfig(true);
+            try {
+              const { createClient } = await import("@supabase/supabase-js");
+              const client = createClient(config.supabaseUrl, config.supabaseAnonKey);
+              setSupabase(client);
 
-            // Get current session
-            const { data: { session: initialSession } } = await client.auth.getSession();
-            setSession(initialSession);
-            if (initialSession) {
-              await loadData(initialSession);
-            }
-
-            // Listen to auth changes
-            const { data: { subscription } } = client.auth.onAuthStateChange((_event, newSession) => {
-              setSession(newSession);
-              if (newSession) {
-                loadData(newSession);
+              // Supabase Anonymous Auth - automatically sign in on first open
+              let currentSession = null;
+              try {
+                const sessionRes = await client.auth.getSession().catch(() => null);
+                currentSession = sessionRes?.data?.session || null;
+                if (!currentSession) {
+                  const { data: anonData, error: anonError } = await client.auth.signInAnonymously().catch(() => ({ data: null, error: { message: "Failed to fetch" } }));
+                  if (!anonError && anonData?.session) {
+                    currentSession = anonData.session;
+                  }
+                }
+              } catch (authErr) {
+                console.info("Supabase client auth offline, continuing in local mode.");
               }
-            });
 
-            unsubscribeFn = () => {
-              subscription.unsubscribe();
-            };
-            setAuthLoading(false);
+              setSession(currentSession);
+              await loadData(currentSession);
+
+              // Listen to auth changes
+              const { data: { subscription } } = client.auth.onAuthStateChange((_event, newSession) => {
+                setSession(newSession);
+                if (newSession) {
+                  loadData(newSession);
+                }
+              });
+
+              unsubscribeFn = () => {
+                subscription.unsubscribe();
+              };
+              setAuthLoading(false);
+            } catch (supErr) {
+              console.warn("Supabase client init failed, falling back to standard mode:", supErr);
+              setAuthLoading(false);
+              await loadData(null);
+            }
           } else {
-            // No Supabase config, bypass auth screen
-            setHasSupabaseConfig(false);
             setAuthLoading(false);
             await loadData(null);
           }
         } else {
-          setHasSupabaseConfig(false);
           setAuthLoading(false);
           await loadData(null);
         }
       } catch (err) {
-        console.error("Auth initialization failed, bypassing to local mode:", err);
-        setHasSupabaseConfig(false);
+        console.info("Auth initialization proceeding in standard mode:", err);
         setAuthLoading(false);
         await loadData(null);
       }
     };
 
     initAuth();
-    triggerAnalytics("session_started", { 
-      device_width: typeof window !== "undefined" ? window.innerWidth : 1024,
-      timestamp: new Date().toISOString()
-    });
-
-    return () => {
-      if (unsubscribeFn) {
-        unsubscribeFn();
-      }
-    };
   }, []);
 
   const triggerAnalytics = async (event_name: string, metadata: Record<string, any>) => {
@@ -319,82 +244,56 @@ export default function App() {
     } catch (_) {}
   };
 
-  // HTML5 native notifications requester
-  const handleToggleNotifications = async () => {
-    if (!("Notification" in window)) {
-      alert("This browser does not support native notifications.");
-      return;
-    }
-    
-    if (Notification.permission === "granted") {
-      triggerAnalytics("notifications_disabled", { previous_status: "granted" });
-      setNotificationPermission("default");
+  const handleTopicToggle = (topicId: string) => {
+    const currentTopics = preferences?.topics || [];
+    let updatedTopics: string[];
+    if (currentTopics.includes(topicId)) {
+      if (currentTopics.length <= 1) return; // Maintain at least one topic
+      updatedTopics = currentTopics.filter(t => t !== topicId);
     } else {
-      const resp = await Notification.requestPermission();
-      setNotificationPermission(resp);
-      triggerAnalytics("notifications_permission_updated", { status: resp });
-      
-      if (resp === "granted") {
-        try {
-          new Notification("News Radar alerts active", {
-            body: "You will be alerted pro-actively when new brief digests compile.",
-            icon: "/favicon.ico"
-          });
-        } catch (e) {
-          console.warn("Failed to trigger desktop notification in sandboxed container:", e);
-        }
-      }
+      updatedTopics = [...currentTopics, topicId];
     }
+    const updatedPrefs = {
+      ...preferences,
+      topics: updatedTopics
+    };
+    setPreferences(updatedPrefs);
+    handleSavePreferences(updatedPrefs);
+    triggerAnalytics("topics_updated", { topics: updatedTopics });
   };
 
-  const handleCategoryPreferenceToggle = (category: string) => {
-    let updatedCats = [...preferences.categories];
-    if (updatedCats.includes(category)) {
-      updatedCats = updatedCats.filter(c => c !== category);
-    } else {
-      updatedCats.push(category);
-    }
-    handleSavePreferences({
+  const handleFrequencyChange = (freqHours: number) => {
+    if (!preferences) return;
+    const updatedPrefs = {
       ...preferences,
-      categories: updatedCats
-    });
-    triggerAnalytics("categories_updated", { categories: updatedCats });
-  };
-
-  const handleFrequencyChange = (freq: "hourly" | "daily" | "weekly") => {
-    handleSavePreferences({
-      ...preferences,
-      frequency: freq
-    });
-    triggerAnalytics("frequency_updated", { frequency: freq });
+      briefing_frequency_hours: freqHours
+    };
+    setPreferences(updatedPrefs);
+    handleSavePreferences(updatedPrefs);
+    triggerAnalytics("frequency_updated", { briefing_frequency_hours: freqHours });
   };
 
   const handleSavePreferences = async (updated: UserPreferences) => {
-    const email = session?.user?.email || "";
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json"
-    };
-    if (email) {
-      headers["x-user-email"] = email;
-    }
-
+    const userId = session?.user?.id || "default";
     try {
       const response = await fetch("/api/preferences", {
         method: "PUT",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": userId
+        },
         body: JSON.stringify(updated)
       });
       if (response.ok) {
         const data = await response.json();
         setPreferences(data.preferences);
-        setPollingTrigger(prev => prev + 1);
       }
     } catch (e) {
-      console.error(e);
+      console.warn("Notice: Error saving preferences:", e);
     }
   };
 
-  // Triggers professional synthesis (former Radar Sweep, now Refresh Briefing)
+  // Triggers professional synthesis briefing generation
   const handleRefreshBriefing = async () => {
     if (loadingRadar) return;
     
@@ -403,44 +302,41 @@ export default function App() {
     setIsKeyError(false);
     
     triggerAnalytics("briefing_refresh_triggered", {
-      custom_feed_count: preferences?.custom_feeds.length || 0,
-      subscribed_categories: preferences?.categories || []
+      subscribed_topics: preferences?.topics || []
     });
 
-    const email = session?.user?.email || "";
-    const headers: Record<string, string> = {};
-    if (email) {
-      headers["x-user-email"] = email;
-    }
+    const userId = session?.user?.id || "default";
 
     try {
       const response = await fetch("/api/briefings/generate", {
         method: "POST",
-        headers
+        headers: {
+          "x-user-email": userId
+        }
       });
-      const data = await response.json();
       
+      let data: any = null;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await response.json();
+        } catch (_) {}
+      }
+
       if (!response.ok) {
-        if (data.isKeyError) {
+        if (data && data.isKeyError) {
           setIsKeyError(true);
         }
-        throw new Error(data.error || "Synthesis interrupted. Verify API parameters in your settings.");
+        const errorMsg = data?.error || `Briefing refresh failed (HTTP ${response.status}).`;
+        throw new Error(errorMsg);
+      }
+      
+      if (!data) {
+        throw new Error("Empty response received from intelligence servers.");
       }
       
       await loadData();
       setPollingTrigger(prev => prev + 1);
-      
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        try {
-          const topHeadline = data.cards?.[0]?.headline || "Intelligence Brief Compiled";
-          new Notification("News Radar: Briefing Compiled", {
-            body: `${topHeadline.substring(0, 60)}...`,
-            tag: "briefing-update"
-          });
-        } catch (e) {
-          console.warn("Failed to trigger desktop notification in sandboxed container:", e);
-        }
-      }
     } catch (err: any) {
       setRadarError(err.message || "Refresh failed.");
       triggerAnalytics("briefing_refresh_failed", { reason: err.message });
@@ -451,34 +347,11 @@ export default function App() {
 
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
-      setSelectedDate(now);
-      
-      // Compute deterministic minutes/hours ago string for the current header
-      const activeGenTime = briefings[0] ? new Date(briefings[0].generated_at) : null;
-      if (activeGenTime) {
-        const diffMs = now.getTime() - activeGenTime.getTime();
-        const diffMins = Math.floor(diffMs / 1000 / 60);
-        if (diffMins < 1) {
-          setTimeState(prev => ({ ...prev, minutesAgoStr: "just now" }));
-        } else if (diffMins === 1) {
-          setTimeState(prev => ({ ...prev, minutesAgoStr: "1 minute ago" }));
-        } else if (diffMins < 60) {
-          setTimeState(prev => ({ ...prev, minutesAgoStr: `${diffMins} minutes ago` }));
-        } else {
-          const diffHours = Math.floor(diffMins / 60);
-          setTimeState(prev => ({ ...prev, minutesAgoStr: diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago` }));
-        }
-      }
+      setSelectedDate(new Date());
     };
-    
-    updateTime();
     const interval = setInterval(updateTime, 10000);
     return () => clearInterval(interval);
-  }, [briefings]);
-
-  // Set selected state for dynamic clock display
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  }, []);
 
   const activeBriefing = briefings[0] || null;
   const historicBriefings = briefings.slice(1);
@@ -487,7 +360,7 @@ export default function App() {
   const unreadStories = (activeBriefing?.cards || []).filter(c => !readStoryIds.includes(c.id));
   const unreadCount = unreadStories.length;
   const readStoriesCount = totalStoriesCount - unreadCount;
-  const estimatedSecondsRemaining = unreadCount === 0 ? 0 : (unreadCount === totalStoriesCount ? 58 : Math.round(unreadCount * 11.6));
+  const estimatedSecondsRemaining = unreadCount === 0 ? 0 : Math.round(unreadCount * 11.6);
 
   useEffect(() => {
     if (activeBriefing?.cards?.length) {
@@ -498,43 +371,33 @@ export default function App() {
     }
   }, [activeBriefing, activeCardId]);
 
-  // Grouping archive briefings by Today, Yesterday, and Last week for the intelligence journal
-  const groupBriefingsByDate = (briefList: Briefing[]) => {
-    const grouped = {
-      today: [] as Briefing[],
-      yesterday: [] as Briefing[],
-      lastWeek: [] as Briefing[]
-    };
-
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
-
-    briefList.forEach((brief) => {
-      const briefTime = new Date(brief.generated_at).getTime();
-      if (briefTime >= startOfToday) {
-        grouped.today.push(brief);
-      } else if (briefTime >= startOfYesterday) {
-        grouped.yesterday.push(brief);
-      } else {
-        grouped.lastWeek.push(brief);
-      }
-    });
-
-    return grouped;
-  };
-
-  const archiveGroups = groupBriefingsByDate(historicBriefings);
-
-  const handleMarkAsRead = (cardId: string) => {
+  const handleMarkAsRead = async (cardId: string) => {
+    const isCurrentlyRead = readStoryIds.includes(cardId);
+    const nextReadState = !isCurrentlyRead;
+    
     setReadStoryIds(prev => {
-      if (prev.includes(cardId)) {
+      if (isCurrentlyRead) {
         return prev.filter(id => id !== cardId);
       } else {
         return [...prev, cardId];
       }
     });
-    triggerAnalytics("story_marked_read", { card_id: cardId });
+
+    // Persist to user_story_state database table
+    try {
+      await fetch("/api/story_state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": session?.user?.id || "default"
+        },
+        body: JSON.stringify({ card_id: cardId, is_read: nextReadState })
+      });
+    } catch (e) {
+      console.warn("Failed to persist story state:", e);
+    }
+
+    triggerAnalytics("story_marked_read", { card_id: cardId, is_read: nextReadState });
   };
 
   const handleNextStory = (currentIndex: number) => {
@@ -542,7 +405,7 @@ export default function App() {
     if (cards[currentIndex]) {
       const currentId = cards[currentIndex].id;
       if (!readStoryIds.includes(currentId)) {
-        setReadStoryIds(prev => [...prev, currentId]);
+        handleMarkAsRead(currentId);
       }
     }
     const nextIndex = currentIndex + 1;
@@ -556,32 +419,14 @@ export default function App() {
     }
   };
 
-  // Layout structures: Top Story is card index 0, ordinary updates are cards 1+
   const topStory = activeBriefing?.cards?.[0] || null;
   const ordinaryUpdates = activeBriefing?.cards?.slice(1) || [];
 
-  // Computed Greeting depending on local hour
   const getGreetingText = () => {
     const hours = selectedDate.getHours();
-    const userName = getUserName();
-    if (hours < 12) return `Good Morning, ${userName}`;
-    if (hours < 18) return `Good Afternoon, ${userName}`;
-    return `Good Evening, ${userName}`;
-  };
-
-  // Formatted Date (e.g., Tuesday, June 9, 2026)
-  const getFormattedDate = () => {
-    return selectedDate.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric"
-    });
-  };
-
-  const handleExportPDF = () => {
-    alert("Exporting Intelligence Brief to secure PDF container... Successful.");
-    triggerAnalytics("export_brief_pdf", { brief_id: activeBriefing?.id });
+    if (hours < 12) return "Good morning.";
+    if (hours < 18) return "Good afternoon.";
+    return "Good evening.";
   };
 
   if (authLoading) {
@@ -601,215 +446,10 @@ export default function App() {
               NEWS RADAR
             </h2>
             <p className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest">
-              Initializing Core Intelligence Systems...
+              Initializing Intelligence Assistant...
             </p>
           </div>
           <RefreshCw size={16} className="text-cyan-400 animate-spin mt-2" />
-        </div>
-      </div>
-    );
-  }
-
-  if (hasSupabaseConfig && !session) {
-    const handleAuthSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!authEmail || !authPassword) {
-        setAuthError("Please fill in all security parameters.");
-        return;
-      }
-      if (authPassword.length < 6) {
-        setAuthError("Security password must be at least 6 characters.");
-        return;
-      }
-
-      setAuthError(null);
-      setAuthSuccessMsg(null);
-      setIsSigningIn(true);
-
-      try {
-        if (authMode === "signin") {
-          const { error } = await supabase.auth.signInWithPassword({
-            email: authEmail,
-            password: authPassword
-          });
-          if (error) {
-            setAuthError(error.message);
-          }
-        } else {
-          const { error } = await supabase.auth.signUp({
-            email: authEmail,
-            password: authPassword
-          });
-          if (error) {
-            setAuthError(error.message);
-          } else {
-            setAuthSuccessMsg("Access credentials registered! Please verify using the email link or sign in.");
-            setAuthMode("signin");
-          }
-        }
-      } catch (err: any) {
-        setAuthError(err.message || "Authentication transmission failed.");
-      } finally {
-        setIsSigningIn(false);
-      }
-    };
-
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 selection:bg-[#00E5FF]/20 transition-colors duration-200 relative ${
-        theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-[#fcfdfd] text-[#111827]"
-      }`}>
-        {/* Glow ambient background blur */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#00E5FF]/5 rounded-full filter blur-3xl pointer-events-none" />
-
-        <div className="w-full max-w-md relative z-10">
-          <div className={`p-8 md:p-10 rounded-3xl border shadow-2xl transition-all duration-200 ${
-            theme === "dark" 
-              ? "bg-[#0c111d] border-slate-800/80 text-slate-300" 
-              : "bg-white border-gray-250 text-gray-700 shadow-md"
-          }`}>
-            
-            {/* Header / Brand */}
-            <div className="flex flex-col items-center text-center space-y-4 mb-8">
-              <div className="relative flex items-center justify-center">
-                {theme === "dark" && (
-                  <div className="absolute inset-0 bg-[#00E5FF]/25 rounded-full filter blur-lg animate-pulse" />
-                )}
-                <RadarLogo size={64} theme={theme} />
-              </div>
-              <div className="space-y-1">
-                <h1 className={`text-2xl font-black uppercase tracking-tight ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
-                }`}>
-                  NEWS RADAR
-                </h1>
-                <p className="text-[10px] text-[#5C827D] font-extrabold uppercase tracking-widest leading-none">
-                  Intelligence Access Portal
-                </p>
-              </div>
-            </div>
-
-            {/* Error or Success feedback */}
-            {authError && (
-              <div className="mb-6 p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 text-red-400">
-                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                <span>{authError}</span>
-              </div>
-            )}
-
-            {authSuccessMsg && (
-              <div className="mb-6 p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-405">
-                <Check size={14} className="shrink-0 mt-0.5" />
-                <span>{authSuccessMsg}</span>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleAuthSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className={`block text-xs font-black uppercase tracking-wider ${
-                  theme === "dark" ? "text-slate-400" : "text-gray-500"
-                }`}>
-                  Intelligence Email Address
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
-                    <User size={14} />
-                  </span>
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className={`w-full text-xs font-bold pl-10 pr-4 py-3 rounded-xl border focus:outline-none cursor-text transition ${
-                      theme === "dark"
-                        ? "bg-[#111726] border-slate-800 text-white focus:border-[#00E5FF]/50"
-                        : "bg-gray-50 border-gray-250 text-gray-900 focus:border-blue-550/50"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`block text-xs font-black uppercase tracking-wider ${
-                  theme === "dark" ? "text-slate-400" : "text-gray-500"
-                }`}>
-                  Security Access Password
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
-                    <Zap size={14} />
-                  </span>
-                  <input
-                    type="password"
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={`w-full text-xs font-bold pl-10 pr-4 py-3 rounded-xl border focus:outline-none cursor-text transition ${
-                      theme === "dark"
-                        ? "bg-[#111726] border-slate-800 text-white focus:border-[#00E5FF]/50"
-                        : "bg-gray-50 border-gray-250 text-gray-900 focus:border-blue-550/50"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSigningIn}
-                className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
-                  theme === "dark"
-                    ? "bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-slate-950 shadow-[#00E5FF]/10"
-                    : "bg-blue-600 hover:bg-blue-650 text-white shadow-blue-500/15"
-                }`}
-              >
-                {isSigningIn ? (
-                  <RefreshCw size={14} className="animate-spin" />
-                ) : authMode === "signin" ? (
-                  "Unlock Radar Core"
-                ) : (
-                  "Generate Access Keys"
-                )}
-              </button>
-            </form>
-
-            {/* Mode Switcher */}
-            <div className="mt-6 pt-6 border-t border-slate-800/60 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode(authMode === "signin" ? "signup" : "signin");
-                  setAuthError(null);
-                  setAuthSuccessMsg(null);
-                }}
-                className={`text-xs font-bold hover:underline cursor-pointer ${
-                  theme === "dark" ? "text-cyan-400 hover:text-cyan-300" : "text-blue-600 hover:text-blue-500"
-                }`}
-              >
-                {authMode === "signin" 
-                  ? "New Analyst? Request Access Credentials" 
-                  : "Have Access Credentials? Unlock Portal"}
-              </button>
-            </div>
-
-          </div>
-
-          {/* Theme switcher on auth page */}
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              type="button"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition ${
-                theme === "dark" 
-                  ? "bg-slate-800/50 hover:bg-slate-800 border-slate-700/60 text-slate-300" 
-                  : "bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-600"
-              }`}
-            >
-              {theme === "dark" ? <Sun size={11} /> : <Moon size={11} />}
-              <span>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</span>
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -820,14 +460,14 @@ export default function App() {
       theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-[#fcfdfd] text-[#111827]"
     }`}>
       
-      {/* LEFT SIDEBAR Layout - Exactly styling like Google Stitch Mockup */}
+      {/* LEFT SIDEBAR Layout */}
       <aside className={`w-[260px] hidden lg:flex flex-col h-screen sticky top-0 shrink-0 border-r z-25 ${
         theme === "dark" 
           ? "bg-[#0c111d] border-slate-800/80 text-slate-300" 
           : "bg-[#f4f6f8] border-gray-200 text-gray-700"
       }`}>
         
-        {/* Brand Header with custom SVG Logo */}
+        {/* Brand Header */}
         <div className={`p-6 flex items-center gap-3 border-b ${
           theme === "dark" ? "border-slate-800/80" : "border-gray-200"
         }`}>
@@ -839,12 +479,12 @@ export default function App() {
               NEWS RADAR
             </span>
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none">
-              Intelligence Core
+              Intelligence Assistant
             </span>
           </div>
         </div>
 
-        {/* Main Sidebar Navigation options */}
+        {/* Main Navigation */}
         <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
           <a 
             href="#briefing-top"
@@ -883,9 +523,25 @@ export default function App() {
             <History size={15} className={activeTab === "archives" ? "text-cyan-405 shrink-0" : "text-gray-400 shrink-0"} />
             <span>Archives</span>
           </a>
+
+          <button
+            onClick={() => setShowPreferencesPanel(!showPreferencesPanel)}
+            className={`w-full flex items-center gap-3.5 px-4.5 py-3 rounded-xl text-xs font-bold transition cursor-pointer text-left ${
+              showPreferencesPanel
+                ? theme === "dark"
+                  ? "bg-[#161f36] text-cyan-400 border border-slate-700/30"
+                  : "bg-white text-blue-600 shadow-sm border border-gray-250/50"
+                : theme === "dark"
+                  ? "text-slate-400 hover:bg-slate-800/40 hover:text-white"
+                  : "text-gray-600 hover:bg-gray-100/70 hover:text-gray-900"
+            }`}
+          >
+            <Settings size={15} className="shrink-0" />
+            <span>Preferences</span>
+          </button>
         </nav>
 
-        {/* Profile Card bottom anchor block - replaced Intelligence Lead with theme switcher button */}
+        {/* Profile Card bottom anchor block */}
         <div className={`p-4 border-t ${
           theme === "dark" ? "border-slate-800/80 bg-[#090d16]" : "border-gray-200 bg-white"
         }`}>
@@ -894,20 +550,19 @@ export default function App() {
               <div className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${
                 theme === "dark" ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "bg-blue-50 text-blue-700 border border-blue-100"
               }`}>
-                {getUserName().charAt(0).toUpperCase()}
+                <User size={16} />
               </div>
               <div className="min-w-0 flex-1">
                 <span className={`block font-bold text-xs truncate ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                  {getUserName()}
+                  News Radar
                 </span>
-                <span className="block text-[9px] text-[#5C827D] font-bold truncate" title={userEmail}>
-                  {userEmail}
+                <span className="block text-[9px] text-[#5C827D] font-medium truncate">
+                  Stay informed without seeking information.
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* In-profile Light/Dark mode Switcher Toggle */}
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 type="button"
@@ -920,27 +575,6 @@ export default function App() {
               >
                 {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
               </button>
-
-              {/* Supabase Logout Button */}
-              {session && (
-                <button
-                  onClick={async () => {
-                    if (supabase) {
-                      await supabase.auth.signOut();
-                      setSession(null);
-                    }
-                  }}
-                  type="button"
-                  className={`p-2 rounded-xl border cursor-pointer transition ${
-                    theme === "dark"
-                      ? "bg-red-950/20 hover:bg-red-900/40 border-red-900/30 text-red-400"
-                      : "bg-red-50 hover:bg-red-100 border-red-200 text-red-600"
-                  }`}
-                  title="Sign Out"
-                >
-                  <LogOut size={12} />
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -954,81 +588,55 @@ export default function App() {
           <div className="bg-red-600 text-white px-6 py-3 text-center text-xs font-bold flex items-center justify-center gap-2.5 shadow-md">
             <AlertTriangle size={15} className="shrink-0 animate-bounce" />
             <span>
-              <strong>Gemini API Key Needed:</strong> Save your key in the <strong>Settings &gt; Secrets</strong> panel of Google AI Studio.
+              <strong>Gemini API Key Needed:</strong> Set your GEMINI_API_KEY environment variable.
             </span>
           </div>
         )}
 
-        {/* MODERN HEADER BAR - Clean and compliant */}
-        <header className={`sticky top-0 z-40 px-6 py-4.5 border-b backdrop-blur-md ${
+        {/* MODERN HEADER BAR */}
+        <header className={`sticky top-0 z-40 px-6 py-4 border-b backdrop-blur-md ${
           theme === "dark" 
             ? "bg-[#0b0f19]/80 border-slate-800/80 text-white" 
             : "bg-[#fcfdfd]/80 border-gray-200/60 text-[#111827]"
         }`}>
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
             
-            {/* Left page indicator or dynamic status pill */}
-            <div className="flex items-center gap-2.5">
-              {/* Mobile hamburger logo */}
-              <div className="flex lg:hidden items-center gap-2 leading-none">
-                <RadarLogo size={24} theme={theme} />
-                <span className="font-extrabold text-[#111827] dark:text-white text-sm">NEWS RADAR</span>
-              </div>
+            {/* Mobile Header Brand */}
+            <div className="flex lg:hidden items-center gap-2">
+              <RadarLogo size={24} theme={theme} />
+              <span className="font-extrabold text-sm">NEWS RADAR</span>
             </div>
 
-            {/* Config controls toolbar */}
+            <div className="hidden lg:flex items-center gap-2 text-xs font-medium text-slate-400">
+              <span>Stay informed without seeking information</span>
+            </div>
+
+            {/* Header Controls (Theme Toggle) */}
             <div className="flex items-center gap-2.5">
-              
-              {/* Alerts slider/switch */}
-              <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold ${
-                theme === "dark" ? "bg-slate-800/50 border-slate-840" : "bg-white border-gray-200 shadow-sm"
-              }`}>
-                <span className={theme === "dark" ? "text-slate-400" : "text-gray-500"}>Enable Alerts</span>
-                <button
-                  onClick={handleToggleNotifications}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    notificationPermission === "granted" ? "bg-blue-600" : "bg-gray-400"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      notificationPermission === "granted" ? "translate-x-4" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Preferences Gear button */}
               <button
-                onClick={() => {
-                  setShowPreferencesPanel(!showPreferencesPanel);
-                  triggerAnalytics("preferences_toggled", { visible: !showPreferencesPanel });
-                }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-bold cursor-pointer transition ${
-                  showPreferencesPanel
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : theme === "dark"
-                      ? "bg-slate-800/50 border-slate-700 text-slate-300 hover:text-white"
-                      : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                type="button"
+                className={`p-2 rounded-full border cursor-pointer transition ${
+                  theme === "dark" 
+                    ? "bg-slate-800 border-slate-700 text-yellow-300 hover:bg-slate-700" 
+                    : "bg-white border-gray-200 text-gray-700 shadow-sm hover:bg-gray-50"
                 }`}
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
-                <Settings size={13} />
-                <span className="hidden md:inline">Preferences</span>
+                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
               </button>
-
             </div>
           </div>
         </header>
 
         {/* WORKSPACE SCROLL BODY */}
         <main id="briefing-top" className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl w-full mx-auto px-6 py-10 flex flex-col gap-8">
+          <div className="max-w-2xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
             
-            {/* Collapsible Notion-style settings configured drawer */}
+            {/* Preferences Drawer */}
             <AnimatePresence>
               {showPreferencesPanel && (
                 <motion.div
-                  id="preferences-module"
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
@@ -1038,206 +646,238 @@ export default function App() {
                     theme === "dark" ? "bg-[#101622] border-slate-800" : "bg-white border-gray-200"
                   }`}>
                     
-                    {/* Topics Preferences checkboxes */}
-                    <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b pb-4 border-slate-800/30">
                       <div>
-                        <h3 className={`font-bold text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Topics You Follow</h3>
-                        <p className={`text-xs ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
-                          Select the topics that matter. News Radar will prioritize these channels in automated compilations.
+                        <h3 className={`font-bold text-base ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Briefing Preferences</h3>
+                        <p className={`text-xs mt-0.5 ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
+                          Choose what matters to you. News Radar will automatically find and prioritize the most relevant stories.
                         </p>
                       </div>
+                      <button
+                        onClick={() => setShowPreferencesPanel(false)}
+                        className={`p-1.5 rounded-lg text-gray-400 hover:text-white transition cursor-pointer`}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Topics Selection */}
+                    <div className="space-y-3">
+                      <h4 className={`font-bold text-xs uppercase tracking-wider ${theme === "dark" ? "text-slate-300" : "text-gray-700"}`}>
+                        Topics You Follow
+                      </h4>
                       <div className="flex flex-wrap gap-2">
-                        {activeCategories.map((topic) => {
-                          const active = preferences?.categories.includes(topic.id);
+                        {availableTopics.map((topic) => {
+                          const isSelected = preferences?.topics?.includes(topic.id);
+                          
+                          if (topic.comingSoon) {
+                            return (
+                              <div
+                                key={topic.id}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium cursor-not-allowed select-none opacity-60 ${
+                                  theme === "dark" ? "bg-slate-900/40 border-slate-800 text-slate-500" : "bg-gray-50 border-gray-200 text-gray-400"
+                                }`}
+                              >
+                                <span>{topic.label}</span>
+                                <span className={`text-[8px] font-bold px-1 rounded uppercase ${
+                                  theme === "dark" ? "bg-slate-800 text-slate-400" : "bg-gray-200 text-gray-500"
+                                }`}>Soon</span>
+                              </div>
+                            );
+                          }
+
                           return (
                             <button
                               key={topic.id}
-                              onClick={() => handleCategoryPreferenceToggle(topic.id)}
+                              onClick={() => handleTopicToggle(topic.id)}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide transition cursor-pointer ${
-                                active 
-                                  ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
+                                isSelected
+                                  ? "bg-blue-600 border-blue-600 text-white shadow-sm"
                                   : theme === "dark"
                                     ? "bg-slate-850 border-slate-700 text-slate-400 hover:text-white"
                                     : "bg-white hover:bg-gray-50 text-gray-600 border-gray-200"
                               }`}
                             >
                               <span>{topic.label}</span>
-                              {active && <Check size={11} className="stroke-[3]" />}
+                              {isSelected && <Check size={11} className="stroke-[3]" />}
                             </button>
                           );
                         })}
-
-                        {upcomingCategories.map((topic) => (
-                          <div
-                            key={topic.label}
-                            title="Coming soon"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium cursor-not-allowed select-none ${
-                              theme === "dark" ? "bg-slate-900/50 border-slate-800 text-slate-500" : "bg-gray-50 border-gray-200 text-gray-400"
-                            }`}
-                          >
-                            <span>{topic.label}</span>
-                            <span className={`text-[8px] font-bold px-1 rounded uppercase ${
-                              theme === "dark" ? "bg-slate-800 text-slate-400" : "bg-gray-200 text-gray-500"
-                            }`}>Soon</span>
-                          </div>
-                        ))}
                       </div>
                     </div>
 
-                    {/* Part C: Automatic compilation interval */}
-                    <div className={`space-y-3 pt-1 ${theme === "dark" ? "" : ""}`}>
-                      <div>
-                        <h3 className={`font-bold text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Automatic compilation interval</h3>
-                        <p className={`text-xs ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>Pick how frequently deep intelligence sweeps compile automatically.</p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(["hourly", "daily", "weekly"] as const).map((freq) => {
-                          const active = preferences?.frequency === freq;
+                    {/* Briefing Frequency */}
+                    <div className="space-y-3 pt-2 border-t border-slate-800/30">
+                      <h4 className={`font-bold text-xs uppercase tracking-wider ${theme === "dark" ? "text-slate-300" : "text-gray-700"}`}>
+                        Briefing Frequency
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { hours: 3, label: "Every 3 hours" },
+                          { hours: 6, label: "Every 6 hours", recommended: true },
+                          { hours: 12, label: "Every 12 hours" },
+                          { hours: 24, label: "Once a day" }
+                        ].map((item) => {
+                          const isSelected = (preferences?.briefing_frequency_hours || 6) === item.hours;
                           return (
                             <button
-                                key={freq}
-                                onClick={() => handleFrequencyChange(freq)}
-                                className={`px-3 py-2 rounded-xl border text-xs font-bold uppercase tracking-wide transition cursor-pointer ${
-                                  active
-                                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                                    : theme === "dark"
-                                      ? "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"
-                                      : "bg-white hover:bg-gray-50 border-gray-200 text-gray-600"
-                                }`}
-                              >
-                                {freq}
-                              </button>
-                            );
-                          })}
-                        </div>
+                              key={item.hours}
+                              onClick={() => handleFrequencyChange(item.hours)}
+                              className={`relative p-3 rounded-xl border text-xs font-bold transition text-center cursor-pointer ${
+                                isSelected
+                                  ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                  : theme === "dark"
+                                    ? "bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                                    : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+                              }`}
+                            >
+                              <div>{item.label}</div>
+                              {item.recommended && (
+                                <span className={`block text-[8px] font-black uppercase mt-1 tracking-wider ${
+                                  isSelected ? "text-blue-100" : "text-cyan-400"
+                                }`}>
+                                  Recommended
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
-
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
-              {/* HIGH-FIDELITY GREETING HEADER - Revamped as requested */}
-              <div className="space-y-1">
-                <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight leading-none ${
-                  theme === "dark" ? "text-white" : "text-[#111827]"
-                }`}>
-                  {getGreetingText()}
-                </h1>
-                <p className={`text-lg md:text-xl font-bold tracking-tight ${
-                  theme === "dark" ? "text-slate-400" : "text-gray-550"
-                }`}>
-                  You have <span className={theme === "dark" ? "text-cyan-400" : "text-blue-600"}>{totalStoriesCount}</span> important updates today
-                </p>
-              </div>
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => setShowPreferencesPanel(false)}
+                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                      >
+                        Save Preferences
+                      </button>
+                    </div>
 
-              {/* Subtitle / active pulse update bar */}
-              <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-4.5 rounded-2xl gap-3 ${
-                theme === "dark" ? "bg-[#111725] border border-slate-800/80" : "bg-blue-50/50 border border-blue-100"
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                    theme === "dark" ? "bg-cyan-500/10 text-cyan-400" : "bg-blue-105 text-blue-700"
-                  }`}>
-                    <Sparkles size={14} className="animate-spin-slow" />
                   </div>
-                  <div>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                      {totalStoriesCount} Important Updates Since Your Last Brief
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* GREETING HEADER */}
+            <div className="space-y-1">
+              <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight leading-none ${
+                theme === "dark" ? "text-white" : "text-[#111827]"
+              }`}>
+                {getGreetingText()}
+              </h1>
+              <p className={`text-base md:text-lg font-bold tracking-tight ${
+                theme === "dark" ? "text-slate-400" : "text-gray-550"
+              }`}>
+                Here are the <span className={theme === "dark" ? "text-cyan-400" : "text-blue-600"}>{totalStoriesCount}</span> important updates since your last brief.
+              </p>
+            </div>
+
+            {/* Briefing Status Bar */}
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-4.5 rounded-2xl gap-3 ${
+              theme === "dark" ? "bg-[#111725] border border-slate-800/80" : "bg-blue-50/50 border border-blue-100"
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  theme === "dark" ? "bg-cyan-500/10 text-cyan-400" : "bg-blue-100 text-blue-700"
+                }`}>
+                  <Sparkles size={14} className="animate-spin-slow" />
+                </div>
+                <div>
+                  <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    Your briefing is ready.
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                    <span className={`font-bold ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
+                      Progress: {readStoriesCount} of {totalStoriesCount} read
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className={`block text-[11px] font-bold ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
-                        Progress: {readStoriesCount} of {totalStoriesCount} stories read
-                      </span>
-                      {readStoriesCount > 0 && (
-                        <button
-                          onClick={() => setReadStoryIds([])}
-                          className={`text-[10px] font-bold underline cursor-pointer hover:no-underline ${
-                            theme === "dark" ? "text-slate-400 hover:text-cyan-400" : "text-gray-500 hover:text-blue-600"
-                          }`}
-                        >
-                          (Reset Progress)
-                        </button>
-                      )}
-                    </div>
-                    <span className={`block text-[11px] font-bold ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
-                      Estimated Time Remaining: {estimatedSecondsRemaining} seconds
+                    <span className="text-gray-500">•</span>
+                    <span className={`font-bold ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
+                      ~{estimatedSecondsRemaining > 0 ? `${estimatedSecondsRemaining} sec remaining` : "Finished"}
                     </span>
                   </div>
                 </div>
-
-                <button
-                  onClick={handleRefreshBriefing}
-                  disabled={loadingRadar}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    theme === "dark"
-                      ? "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                >
-                  <RefreshCw size={12} className={loadingRadar ? "animate-spin" : ""} />
-                  <span>{loadingRadar ? "COMPILING" : "SWEEP REFRESH"}</span>
-                </button>
               </div>
 
-            {/* PRECISE 3-METRICS SUMMARY CONTAINER FROM STITCH IMAGE */}
-            <div className={`border rounded-2xl p-5 shadow-sm ${
+              <button
+                onClick={handleRefreshBriefing}
+                disabled={loadingRadar}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+                  theme === "dark"
+                    ? "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                }`}
+              >
+                <RefreshCw size={12} className={loadingRadar ? "animate-spin" : ""} />
+                <span>{loadingRadar ? "Refreshing Briefing..." : "Refresh Briefing"}</span>
+              </button>
+            </div>
+
+            {/* How We Built Your Briefing (Transparency Section) */}
+            <div className={`border rounded-2xl p-4.5 shadow-sm ${
               theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
             }`}>
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4.5 flex items-center gap-2">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                <span>TODAY&apos;S RADAR INTELLIGENCE KEY SUMMARY</span>
+                <span>HOW WE BUILT YOUR BRIEFING</span>
               </div>
-              <div className={`grid grid-cols-3 divide-x ${
+              <div className={`grid grid-cols-4 divide-x text-center ${
                 theme === "dark" ? "divide-slate-800/60" : "divide-gray-100"
               }`}>
-                <div className="text-center px-2">
-                  <span className={`block text-2.5xl font-extrabold font-sans tracking-tight leading-none ${
+                <div className="px-1">
+                  <span className={`block text-xl font-extrabold tracking-tight leading-none ${
                     theme === "dark" ? "text-white" : "text-gray-900"
                   }`}>
-                    {getScannedCount(activeBriefing)}
+                    127
                   </span>
-                  <span className="block text-[10px] font-bold text-gray-455 uppercase tracking-wide mt-1.5">
-                    Articles Scanned
+                  <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                    Articles Analyzed
                   </span>
                 </div>
-                <div className="text-center px-2">
-                  <span className="block text-2.5xl font-extrabold font-sans tracking-tight leading-none text-cyan-400">
+                <div className="px-1">
+                  <span className="block text-xl font-extrabold tracking-tight leading-none text-cyan-400">
+                    42
+                  </span>
+                  <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                    Stories Clustered
+                  </span>
+                </div>
+                <div className="px-1">
+                  <span className={`block text-xl font-extrabold tracking-tight leading-none ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>
                     {activeBriefing?.cards?.length || 5}
                   </span>
-                  <span className="block text-[10px] font-bold text-gray-455 uppercase tracking-wide mt-1.5">
-                    Clustered Insights
+                  <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                    Insights Selected
                   </span>
                 </div>
-                <div className="text-center px-2">
-                  <span className={`block text-2.5xl font-extrabold font-sans tracking-tight leading-none ${
+                <div className="px-1">
+                  <span className={`block text-xl font-extrabold tracking-tight leading-none ${
                     theme === "dark" ? "text-white" : "text-gray-900"
                   }`}>
-                    {getTargetReadTimeSeconds(activeBriefing)}s
+                    ~58s
                   </span>
-                  <span className="block text-[10px] font-bold text-gray-455 uppercase tracking-wide mt-1.5">
-                    Target Read Time
+                  <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                    Reading Time
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Today's Briefing Story Queue / Outline */}
+            {/* Briefing Outline / Queue */}
             {activeBriefing && activeBriefing.cards && activeBriefing.cards.length > 0 && (
-              <div className={`border rounded-2xl p-5 shadow-sm space-y-4 ${
+              <div className={`border rounded-2xl p-5 shadow-sm space-y-3 ${
                 theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
               }`}>
-                <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-2.5 border-slate-800/30">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span>TODAY&apos;S BRIEFING OUTLINE / QUEUE</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 font-mono">
-                    {Math.round((readStoriesCount / totalStoriesCount) * 100)}% COMPLETE
+                <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-2 border-slate-800/30">
+                  <span>STORY QUEUE</span>
+                  <span className="font-mono text-slate-500">
+                    {Math.round((readStoriesCount / totalStoriesCount) * 100)}% READ
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {activeBriefing.cards.map((card, idx) => {
                     const isRead = readStoryIds.includes(card.id);
                     const isActive = activeCardId === card.id;
@@ -1252,7 +892,7 @@ export default function App() {
                             el.scrollIntoView({ behavior: "smooth", block: "center" });
                           }
                         }}
-                        className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-xl border transition-all text-xs cursor-pointer ${
+                        className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-xl border transition-all text-xs cursor-pointer ${
                           isActive
                             ? theme === "dark"
                               ? "bg-slate-800/80 border-cyan-500/60 text-white font-bold"
@@ -1262,7 +902,7 @@ export default function App() {
                               : "bg-gray-50/50 border-gray-100 text-gray-700 hover:bg-gray-100/55"
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <span className="text-gray-400 font-mono text-[10px] shrink-0 font-bold">
                             {idx + 1}.
                           </span>
@@ -1270,18 +910,11 @@ export default function App() {
                         </div>
                         
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
-                            theme === "dark" ? "bg-slate-800 text-slate-450 border-slate-705" : "bg-white text-gray-500 border-gray-150"
-                          }`}>
-                            {card.category}
-                          </span>
                           {isRead ? (
-                            <Check size={14} className={theme === "dark" ? "text-cyan-400 stroke-[3.5]" : "text-blue-650 stroke-[3.5]"} />
+                            <CheckCircle2 size={14} className={theme === "dark" ? "text-cyan-400" : "text-blue-600"} />
                           ) : (
                             <span className={`h-2 w-2 rounded-full shrink-0 ${
-                              isActive 
-                                ? "bg-cyan-400 animate-pulse" 
-                                : "bg-gray-300 dark:bg-slate-700"
+                              isActive ? "bg-cyan-400 animate-pulse" : "bg-gray-300 dark:bg-slate-700"
                             }`}></span>
                           )}
                         </div>
@@ -1292,67 +925,55 @@ export default function App() {
               </div>
             )}
 
-            {/* Satisfying Briefing Completion Card */}
+            {/* Briefing Completion Card */}
             {unreadCount === 0 && totalStoriesCount > 0 && (
               <motion.div
                 initial={{ scale: 0.98, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className={`border rounded-2xl p-8 text-center space-y-6 ${
                   theme === "dark" 
-                    ? "bg-gradient-to-br from-[#10192e] to-[#0d1323] border-emerald-500/30 shadow-[0_4px_30px_rgba(16,185,129,0.05)]" 
+                    ? "bg-gradient-to-br from-[#10192e] to-[#0d1323] border-emerald-500/30 shadow-lg" 
                     : "bg-gradient-to-br from-emerald-50/40 to-white border-emerald-200 shadow-sm"
                 }`}
               >
                 <div className="flex flex-col items-center">
-                  <div className={`h-14 w-14 rounded-full flex items-center justify-center mb-3 ${
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center mb-3 ${
                     theme === "dark" ? "bg-emerald-500/10 text-emerald-400 animate-bounce" : "bg-emerald-100 text-emerald-750 animate-bounce"
                   }`}>
-                    <Check size={28} className="stroke-[3]" />
+                    <Check size={24} className="stroke-[3]" />
                   </div>
                   <h2 className={`text-2xl font-black tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    🎉 Briefing Complete
+                    Briefing Complete
                   </h2>
-                  <p className={`text-xs max-w-md mt-1.5 ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
-                    Outstanding work, {getUserName()}. You have officially calibrated today&apos;s tech satellite feeds and synchronized all strategic signals.
+                  <p className={`text-xs max-w-md mt-1 ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
+                    You reviewed all {totalStoriesCount} important updates in today&apos;s intelligence brief.
                   </p>
                 </div>
 
-                <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 p-4.5 rounded-xl text-left border ${
+                <div className={`grid grid-cols-3 gap-3 p-4 rounded-xl text-center border ${
                   theme === "dark" ? "bg-slate-900/60 border-slate-800" : "bg-gray-50/50 border-gray-150"
                 }`}>
                   <div className="space-y-0.5">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">You reviewed</span>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                      {totalStoriesCount} important updates
-                    </span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time spent</span>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-cyan-400" : "text-blue-650"}`}>
-                      42 seconds
-                    </span>
-                  </div>
-                  <div className="space-y-0.5 border-t pt-2 sm:border-t-0 sm:pt-0">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Articles analyzed</span>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                      127
-                    </span>
-                  </div>
-                  <div className="space-y-0.5 border-t pt-2 sm:border-t-0 sm:pt-0">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stories selected</span>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-cyan-400" : "text-blue-650"}`}>
+                    <span className="block text-[9px] font-bold text-gray-400 uppercase">Updates Reviewed</span>
+                    <span className={`block text-sm font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                       {totalStoriesCount}
                     </span>
                   </div>
-                  <div className="space-y-0.5 border-t pt-2 sm:border-t-0 sm:pt-0 col-span-2 sm:col-span-1">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Next briefing</span>
-                    <span className={`block text-xs font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                  <div className="space-y-0.5">
+                    <span className="block text-[9px] font-bold text-gray-400 uppercase">Est. Read Time</span>
+                    <span className={`block text-sm font-extrabold ${theme === "dark" ? "text-cyan-400" : "text-blue-650"}`}>
+                      47 seconds
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="block text-[9px] font-bold text-gray-400 uppercase">Next Briefing</span>
+                    <span className={`block text-sm font-extrabold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                       6:00 PM
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <div className="flex items-center justify-center gap-3">
                   <button
                     onClick={() => {
                       setActiveTab("archives");
@@ -1365,12 +986,10 @@ export default function App() {
                     <ArrowRight size={13} />
                   </button>
                   <button
-                    onClick={() => {
-                      setReadStoryIds([]);
-                    }}
-                    className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                    onClick={() => setReadStoryIds([])}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
                       theme === "dark"
-                        ? "bg-slate-800/50 border-slate-705 hover:bg-slate-800 text-slate-300"
+                        ? "bg-slate-800/50 border-slate-700 hover:bg-slate-800 text-slate-300"
                         : "bg-white border-gray-200 hover:bg-gray-50 text-gray-750"
                     }`}
                   >
@@ -1380,24 +999,24 @@ export default function App() {
               </motion.div>
             )}
 
-            {/* REFRESH STATUS / API INTERRUPTED NOTICES */}
+            {/* Error alerts */}
             {radarError && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4.5 text-xs text-red-400 flex items-start gap-3">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-xs text-red-400 flex items-start gap-3">
                 <AlertTriangle size={15} className="shrink-0 mt-0.5 text-red-400" />
                 <div>
-                  <p className="font-extrabold">Briefing Build Halted</p>
+                  <p className="font-extrabold">Briefing Generation Issue</p>
                   <p className="text-red-300 font-medium mt-0.5">{radarError}</p>
                 </div>
               </div>
             )}
 
-            {/* FOCUS HUB SECTION: 🔥 TOP STORY */}
+            {/* 🔥 TOP STORY */}
             {topStory ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-400 flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                    <span>🔥 TOP STORY</span>
+                    <span>TOP STORY</span>
                   </h2>
                 </div>
                 
@@ -1418,19 +1037,19 @@ export default function App() {
                 theme === "dark" ? "bg-[#111725] border-slate-800" : "bg-white border-gray-200"
               }`}>
                 <Sparkles className="text-gray-400 mx-auto mb-3" size={24} />
-                <p className="text-sm font-semibold mb-1 text-slate-300">Your Intelligence Board is quiet</p>
-                <p className="text-xs text-slate-550 max-w-sm mx-auto leading-relaxed">
-                  No bulletins compiled yet. Click &ldquo;SWEEP REFRESH&rdquo; to fetch and synthesize technology updates.
+                <p className="text-sm font-semibold mb-1 text-slate-300">Your briefing is empty</p>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Click &ldquo;Refresh Briefing&rdquo; to analyze technology updates.
                 </p>
               </div>
             )}
 
-            {/* ORDINARY INSIGHT BULLETINS STACKED OR COLUMNED */}
+            {/* OTHER STORIES */}
             {ordinaryUpdates.length > 0 && (
               <div className="space-y-5">
                 <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-400 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-                  <span>FOCUS HUB SIGNALS</span>
+                  <span>MORE STORIES</span>
                 </h2>
                 
                 <div className="grid grid-cols-1 gap-5">
@@ -1455,7 +1074,7 @@ export default function App() {
               </div>
             )}
 
-            {/* PREVIOUS BRIEFINGS HISTORY ARCHIVES TIMELINE */}
+            {/* PREVIOUS BRIEFINGS HISTORY */}
             <div id="archives-section" className="space-y-6 pt-8 border-t border-slate-800/40">
               <div>
                 <h2 className={`text-lg font-bold tracking-tight mb-1 flex items-center gap-2.5 ${
@@ -1464,126 +1083,48 @@ export default function App() {
                   <History size={18} className="text-slate-400 shrink-0" />
                   <span>Previous Briefings</span>
                 </h2>
-                <p className="text-xs text-slate-500">Your personal chronological technology intelligence journal.</p>
+                <p className="text-xs text-slate-500">Your personal intelligence briefing archive.</p>
               </div>
 
-              <div className="space-y-6">
-                {/* Today's older briefs */}
-                {archiveGroups.today.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-1">Today</h3>
-                    <div className="space-y-3.5">
-                      {archiveGroups.today.map((brief, idx) => (
-                        <div key={brief.id} className={`border rounded-2xl p-5 shadow-sm space-y-3 ${
-                          theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
-                        }`}>
-                          <div className="flex items-center justify-between text-xs text-gray-400 border-b pb-2.5 border-slate-800/30">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-bold ${theme === "dark" ? "text-slate-200" : "text-gray-800"}`}>Briefing Digest #{historicBriefings.length - idx}</span>
-                              <span className="text-gray-600">•</span>
-                              <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wider ${
-                                theme === "dark" ? "bg-slate-800 text-slate-350" : "bg-gray-100 text-gray-600"
-                              }`}>{brief.cards.length} Stories</span>
-                            </div>
-                            <span className="font-semibold text-gray-500">{new Date(brief.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          <div className="space-y-3">
-                            {brief.cards.map((card) => (
-                              <div key={card.id} className="text-xs">
-                                <h4 className={`font-black tracking-tight cursor-help ${
-                                  theme === "dark" ? "text-slate-200 hover:text-cyan-400" : "text-gray-800 hover:text-blue-600"
-                                }`} title={card.headline}>{card.headline}</h4>
-                                <p className={`leading-relaxed mt-1 text-[11px] font-normal ${
-                                  theme === "dark" ? "text-slate-400" : "text-gray-500"
-                                }`}>{card.summary}</p>
-                              </div>
-                            ))}
-                          </div>
+              <div className="space-y-4">
+                {historicBriefings.map((brief, idx) => (
+                  <div key={brief.id} className={`border rounded-2xl p-5 shadow-sm space-y-3 ${
+                    theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
+                  }`}>
+                    <div className="flex items-center justify-between text-xs text-gray-400 border-b pb-2.5 border-slate-800/30">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${theme === "dark" ? "text-slate-200" : "text-gray-800"}`}>
+                          Briefing Digest #{historicBriefings.length - idx}
+                        </span>
+                        <span className="text-gray-600">•</span>
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wider ${
+                          theme === "dark" ? "bg-slate-800 text-slate-350" : "bg-gray-100 text-gray-600"
+                        }`}>{brief.cards?.length || 0} Stories</span>
+                      </div>
+                      <span className="font-semibold text-gray-500">
+                        {new Date(brief.generated_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {brief.cards?.map((card) => (
+                        <div key={card.id} className="text-xs">
+                          <h4 className={`font-bold ${
+                            theme === "dark" ? "text-slate-200" : "text-gray-800"
+                          }`}>{card.headline}</h4>
+                          <p className={`leading-relaxed mt-1 text-[11px] ${
+                            theme === "dark" ? "text-slate-400" : "text-gray-500"
+                          }`}>{card.summary}</p>
                         </div>
                       ))}
                     </div>
                   </div>
-                )}
-
-                {/* Yesterday's briefs */}
-                {archiveGroups.yesterday.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-1">Yesterday</h3>
-                    <div className="space-y-3.5">
-                      {archiveGroups.yesterday.map((brief, idx) => (
-                        <div key={brief.id} className={`border rounded-2xl p-5 shadow-sm space-y-3 ${
-                          theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
-                        }`}>
-                          <div className="flex items-center justify-between text-xs text-gray-400 border-b pb-2.5 border-slate-800/30">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-bold ${theme === "dark" ? "text-slate-200" : "text-gray-800"}`}>Briefing Digest #{historicBriefings.length - archiveGroups.today.length - idx}</span>
-                              <span className="text-gray-650">•</span>
-                              <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wider ${
-                                theme === "dark" ? "bg-slate-800 text-slate-350" : "bg-gray-100 text-gray-600"
-                              }`}>{brief.cards.length} Stories</span>
-                            </div>
-                            <span className="font-semibold text-gray-550">{formatArchiveDate(brief.generated_at)}</span>
-                          </div>
-                          <div className="space-y-3">
-                            {brief.cards.map((card) => (
-                              <div key={card.id} className="text-xs">
-                                <h4 className={`font-black tracking-tight cursor-help ${
-                                  theme === "dark" ? "text-slate-200 hover:text-cyan-400" : "text-gray-800 hover:text-blue-600"
-                                }`} title={card.headline}>{card.headline}</h4>
-                                <p className={`leading-relaxed mt-1 text-[11px] font-normal ${
-                                  theme === "dark" ? "text-slate-400" : "text-gray-500"
-                                }`}>{card.summary}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Previous Week's older briefs */}
-                {archiveGroups.lastWeek.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-bold text-gray-400 tracking-widest uppercase px-1">Last Week</h3>
-                    <div className="space-y-3.5">
-                      {archiveGroups.lastWeek.map((brief, idx) => (
-                        <div key={brief.id} className={`border rounded-2xl p-5 shadow-sm space-y-3 ${
-                          theme === "dark" ? "bg-[#111624] border-slate-800/80" : "bg-white border-gray-200"
-                        }`}>
-                          <div className="flex items-center justify-between text-xs text-gray-400 border-b pb-2.5 border-slate-800/30">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-bold ${theme === "dark" ? "text-slate-200" : "text-gray-800"}`}>Briefing Digest #{archiveGroups.lastWeek.length - idx}</span>
-                              <span className="text-gray-650">•</span>
-                              <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wider ${
-                                theme === "dark" ? "bg-slate-800 text-slate-350" : "bg-gray-100 text-gray-600"
-                              }`}>{brief.cards.length} Stories</span>
-                            </div>
-                            <span className="font-semibold text-gray-500">{formatArchiveDate(brief.generated_at)}</span>
-                          </div>
-                          <div className="space-y-3">
-                            {brief.cards.map((card) => (
-                              <div key={card.id} className="text-xs">
-                                <h4 className={`font-black cursor-help truncate ${
-                                  theme === "dark" ? "text-slate-200 hover:text-cyan-400" : "text-gray-800 hover:text-blue-600"
-                                }`} title={card.headline}>{card.headline}</h4>
-                                <p className={`leading-relaxed mt-1 text-[11px] font-normal ${
-                                  theme === "dark" ? "text-slate-400" : "text-gray-500"
-                                }`}>{card.summary}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                ))}
 
                 {historicBriefings.length === 0 && (
                   <div className={`p-8 border border-dashed rounded-2xl text-center text-xs italic ${
                     theme === "dark" ? "bg-slate-900/40 border-slate-800 text-slate-500" : "bg-gray-50/50 border-gray-200 text-gray-400"
                   }`}>
-                    No past intelligence briefings catalogued. Scored trends update dynamically here over sessions.
+                    No previous briefings stored yet.
                   </div>
                 )}
               </div>
@@ -1591,16 +1132,16 @@ export default function App() {
 
           </div>
 
-          {/* PREMIUM FOOTER */}
-          <footer className={`py-12 mt-12 text-center text-xs border-t ${
-            theme === "dark" ? "border-slate-800/60 bg-[#090b13] text-slate-450" : "bg-gray-50 border-gray-200 text-gray-500"
+          {/* FOOTER */}
+          <footer className={`py-10 mt-12 text-center text-xs border-t ${
+            theme === "dark" ? "border-slate-800/60 bg-[#090b13] text-slate-400" : "bg-gray-50 border-gray-200 text-gray-500"
           }`}>
-            <div className="max-w-2xl mx-auto px-6 space-y-4">
+            <div className="max-w-2xl mx-auto px-6 space-y-2">
               <p className="font-bold tracking-widest text-[#5C827D] text-[10px] uppercase">
-                Briefing generated by News Radar AI v4.5 Core
+                News Radar AI Assistant
               </p>
               <p className="text-[11px] font-medium opacity-70">
-                &copy; {new Date().getFullYear()} News Radar. Grounded in Google GenAI & RSS satellites.
+                Stay informed without seeking information.
               </p>
             </div>
           </footer>

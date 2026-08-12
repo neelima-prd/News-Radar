@@ -52,7 +52,7 @@ export function LiveRadarLogs({ pollingTrigger }: { pollingTrigger: number }) {
       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 text-slate-400">
         <div className="flex items-center gap-2">
           <Terminal size={14} className="text-emerald-400 animate-pulse" />
-          <span className="font-semibold text-slate-200">Radar Intelligence Log</span>
+          <span className="font-semibold text-slate-200">System Processing Log</span>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -76,7 +76,7 @@ export function LiveRadarLogs({ pollingTrigger }: { pollingTrigger: number }) {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-1.5 pr-1 font-mono leading-relaxed text-slate-300">
         {logs.length === 0 ? (
-          <div className="text-slate-600 italic py-2 text-center">No telemetry logs registered yet. Trigger a scan to sweep.</div>
+          <div className="text-slate-600 italic py-2 text-center">No system logs recorded yet.</div>
         ) : (
           logs.map((log, idx) => {
             let color = "text-slate-400";

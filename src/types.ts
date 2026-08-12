@@ -16,15 +16,15 @@ export interface Article {
 export interface BriefingCard {
   id: string;
   briefing_id: string;
+  rank?: number;
+  priority: "TOP STORY" | "IMPORTANT" | "OTHER";
   headline: string;
   summary: string;
   why_it_matters: string;
-  category: string;
-  relevance: number; // 1-100
-  importance: number; // 1-100
-  popularity: number; // 1-100
-  score: number; // ranked score (40% relevance + 40% importance + 20% popularity)
+  category: string; // 'Technology', 'Startups'
+  why_selected?: string[]; // transparency points: e.g. ["Matches your Technology interest", "High industry impact", "Covered by multiple trusted sources"]
   source_articles: { title: string; url: string; source: string }[];
+  isRead?: boolean;
 }
 
 export interface Briefing {
@@ -32,21 +32,22 @@ export interface Briefing {
   generated_at: string;
   is_automated: boolean;
   cards: BriefingCard[];
-  scanned_count?: number;
+  scanned_count?: number; // articles analyzed count
+  cluster_count?: number; // stories clustered count
+  selected_story_count?: number;
   target_read_time_seconds?: number;
 }
 
 export interface UserPreferences {
-  categories: string[]; // e.g. ["AI & ML", "Startups & VC", "Biotech", "Fintech", "Green Tech"]
-  frequency: "hourly" | "daily" | "weekly";
-  custom_feeds: string[]; // custom RSS feeds URLs
+  topics: string[]; // e.g. ["technology", "startups"]
+  briefing_frequency_hours: 3 | 6 | 12 | 24; // default 6
+  notifications_enabled?: boolean;
 }
 
 export interface Feedback {
   id: string;
-  card_id: string;
-  feedback_type: "up" | "down";
-  comment?: string;
+  briefing_item_id: string;
+  feedback_type: "useful" | "not_relevant";
   created_at: string;
 }
 
@@ -62,3 +63,4 @@ export interface LiveRadarLog {
   message: string;
   type: "info" | "success" | "warning" | "error";
 }
+

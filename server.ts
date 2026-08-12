@@ -8,6 +8,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { DBManager } from "./server_db";
 import { NewsService } from "./news_service";
+import { UserPreferences, Feedback } from "./src/types";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -24,9 +25,22 @@ app.get("/api/health", (req, res) => {
 
 // API: Config probe for Supabase public keys
 app.get("/api/config", (req, res) => {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || null;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || null;
+
+  const isValid = Boolean(
+    url &&
+    key &&
+    url.startsWith("http") &&
+    !url.includes("your-project") &&
+    !url.includes("your-supabase") &&
+    !url.includes("example.com") &&
+    !key.includes("your-anon-key")
+  );
+
   res.json({
-    supabaseUrl: process.env.SUPABASE_URL || null,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || null
+    supabaseUrl: isValid ? url : null,
+    supabaseAnonKey: isValid ? key : null
   });
 });
 
@@ -40,40 +54,55 @@ app.get("/api/briefings", async (req, res) => {
   }
 });
 
-// API: Trigger dynamic Radar Sweeper briefing generation
+// API: Trigger dynamic briefing generation
 app.post("/api/briefings/generate", async (req, res) => {
   try {
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      DBManager.addLiveLog("Attempted Radar Sweep, but GEMINI_API_KEY is not defined. Please add your key in Settings > Secrets.", "error");
-      return res.status(400).json({
-        error: "GEMINI_API_KEY environment variable is not defined or is a placeholder.",
-        isKeyError: true
-      });
-    }
-
     const userEmail = req.headers["x-user-email"] as string | undefined;
-    const { categories, custom_feeds } = await DBManager.getPreferences(userEmail);
-    
-    // 1. Fetch articles
-    const rawArticles = await NewsService.fetchLatestArticles(custom_feeds);
-    
-    // 2. Synthesize using Gemini
-    const briefing = await NewsService.runRadarIntelligence(rawArticles, categories);
-    
+    const prefs = await DBManager.getPreferences(userEmail);
+    const topics = prefs.topics && prefs.topics.length > 0 ? prefs.topics : ["technology", "startups"];
+
+    // 1. Fetch latest articles from curated source feeds
+    const rawArticles = await NewsService.fetchLatestArticles([]);
+
+    // 2. Synthesize briefing using AI
+    const briefing = await NewsService.runRadarIntelligence(rawArticles, topics);
+
     // 3. Save briefing
     await DBManager.addBriefing(briefing);
-    
+
     // 4. Log analytics event
-    await DBManager.addAnalyticsEvent("radar_sweep_triggered", {
+    await DBManager.addAnalyticsEvent("briefing_generated", {
       briefing_id: briefing.id,
       card_count: briefing.cards.length,
-      category_filters: categories
+      topics
     });
 
     res.json(briefing);
   } catch (err: any) {
-    console.error("Radar Sweep error:", err);
-    res.status(500).json({ error: err.message || "Radar sweep failed due to systemic error" });
+    console.error("Briefing generation error:", err);
+    res.status(500).json({ error: err.message || "Briefing generation failed." });
+  }
+});
+
+// API: Story state (get read items & mark read/unread)
+app.get("/api/story_state", async (req, res) => {
+  try {
+    const userEmail = req.headers["x-user-email"] as string | undefined;
+    const readIds = await DBManager.getReadStoryIds(userEmail);
+    res.json(readIds);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to get story state" });
+  }
+});
+
+app.post("/api/story_state", async (req, res) => {
+  try {
+    const { card_id, is_read } = req.body;
+    const userEmail = req.headers["x-user-email"] as string | undefined;
+    await DBManager.updateStoryState(card_id, Boolean(is_read), userEmail);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update story state" });
   }
 });
 
@@ -90,18 +119,23 @@ app.get("/api/preferences", async (req, res) => {
 
 app.put("/api/preferences", async (req, res) => {
   try {
-    const { categories, frequency, custom_feeds } = req.body;
+    const { topics, briefing_frequency_hours, notifications_enabled } = req.body;
     const userEmail = req.headers["x-user-email"] as string | undefined;
-    
-    if (!Array.isArray(categories) || !frequency) {
-      return res.status(400).json({ error: "Invalid preference schema" });
-    }
 
-    await DBManager.savePreferences({ categories, frequency, custom_feeds: custom_feeds || [] }, userEmail);
-    await DBManager.addAnalyticsEvent("preferences_updated", { categories, frequency, feed_count: (custom_feeds || []).length });
-    DBManager.addLiveLog("User preferences and custom feed configurations updated.", "success");
+    const validTopics = Array.isArray(topics) ? topics : ["technology", "startups"];
+    const validFreq = [3, 6, 12, 24].includes(Number(briefing_frequency_hours)) ? Number(briefing_frequency_hours) as any : 6;
 
-    res.json({ ok: true, preferences: await DBManager.getPreferences(userEmail) });
+    const updatedPrefs: UserPreferences = {
+      topics: validTopics,
+      briefing_frequency_hours: validFreq,
+      notifications_enabled: Boolean(notifications_enabled)
+    };
+
+    await DBManager.savePreferences(updatedPrefs, userEmail);
+    await DBManager.addAnalyticsEvent("preferences_updated", updatedPrefs);
+    DBManager.addLiveLog("User preferences updated.", "success");
+
+    res.json({ ok: true, preferences: updatedPrefs });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to save user preferences" });
   }
@@ -125,11 +159,10 @@ app.post("/api/feedback", async (req, res) => {
       return res.status(400).json({ error: "Card ID and Feedback Type required" });
     }
 
-    const feedback = {
+    const feedback: Feedback = {
       id: "fdb-" + Math.random().toString(36).substr(2, 9),
-      card_id,
-      feedback_type,
-      comment,
+      briefing_item_id: card_id,
+      feedback_type: feedback_type === "useful" || feedback_type === "not_relevant" ? feedback_type : "useful",
       created_at: new Date().toISOString()
     };
 
