@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "server.ts,server_db.ts,news_service.ts,src/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

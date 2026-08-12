@@ -4,8 +4,8 @@
  */
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { DBManager } from "./server_db";
-import { Briefing, BriefingCard, Article } from "./src/types";
+import { DBManager } from "./server_db.js";
+import { Briefing, BriefingCard, Article } from "./src/types.js";
 
 // Lazy-initialize Gemini SDK to ensure it picks up the latest API keys and supports settings changes seamlessly
 let aiClient: GoogleGenAI | null = null;

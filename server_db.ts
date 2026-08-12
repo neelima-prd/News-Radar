@@ -6,7 +6,7 @@
 import fs from "fs";
 import path from "path";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { Briefing, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types";
+import { Briefing, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types.js";
 
 let supabaseClient: SupabaseClient | null = null;
 let supabaseDisabled = false;

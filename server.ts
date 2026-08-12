@@ -6,9 +6,9 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { DBManager } from "./server_db";
-import { NewsService } from "./news_service";
-import { UserPreferences, Feedback } from "./src/types";
+import { DBManager } from "./server_db.js";
+import { NewsService } from "./news_service.js";
+import { UserPreferences, Feedback } from "./src/types.js";
 import dotenv from "dotenv";
 
 dotenv.config();
