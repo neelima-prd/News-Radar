@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { Briefing, BriefingCard, UserPreferences, Feedback, AnalyticsEvent, LiveRadarLog } from "./src/types.js";
+import { Briefing, BriefingCard, UserPreferences } from "./src/types.js";
 
 let supabaseClient: SupabaseClient | null = null;
 let supabaseDisabled = false;
@@ -83,9 +83,6 @@ const DB_FILE = process.env.VERCEL
 interface DBStructure {
   briefings: Briefing[];
   preferences: UserPreferences;
-  feedbacks: Feedback[];
-  analytics_events: AnalyticsEvent[];
-  live_logs: LiveRadarLog[];
   user_story_states?: Record<string, string[]>;
 }
 
@@ -107,14 +104,12 @@ function safeParseArray(val: any): string[] {
       } catch (_) {}
     }
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      // Postgres text array format: {"item1","item2"} or {item1,item2}
       return trimmed
         .slice(1, -1)
         .split(",")
         .map(item => item.trim().replace(/^"|"$/g, "").replace(/\\"/g, '"'))
         .filter(Boolean);
     }
-    // Comma-separated fallback
     return trimmed.split(",").map(item => item.trim()).filter(Boolean);
   }
   return [];
@@ -129,7 +124,6 @@ const SEED_CARD_IDS = [
   "22222222-2222-4222-8222-222222222205"
 ];
 
-// Seed initial briefings to populate the UI beautifully if empty
 const seedBriefings = (): Briefing[] => {
   const now = new Date();
 
@@ -244,23 +238,6 @@ const seedBriefings = (): Briefing[] => {
   ];
 };
 
-const seedAnalytics = (): AnalyticsEvent[] => {
-  return [
-    {
-      id: "ae1",
-      event_name: "app_initialized",
-      metadata: { user_agent: "Node/Express Server", system_time: new Date().toISOString() },
-      created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString()
-    },
-    {
-      id: "ae2",
-      event_name: "briefing_viewed",
-      metadata: { briefing_id: SEED_BRIEFING_ID },
-      created_at: new Date(Date.now() - 3600000 * 12).toISOString()
-    }
-  ];
-};
-
 export class DBManager {
   private static loadDB(): DBStructure {
     try {
@@ -273,23 +250,7 @@ export class DBManager {
       if (!fs.existsSync(DB_FILE)) {
         const initialDB: DBStructure = {
           briefings: seedBriefings(),
-          preferences: DEFAULT_PREFS,
-          feedbacks: [
-            {
-              id: "33333333-3333-4333-8333-333333333333",
-              briefing_item_id: SEED_CARD_IDS[0],
-              feedback_type: "useful",
-              created_at: new Date(Date.now() - 3600000 * 10).toISOString()
-            }
-          ],
-          analytics_events: seedAnalytics(),
-          live_logs: [
-            {
-              timestamp: new Date().toISOString(),
-              message: "Database system initialized. Seed briefings loaded successfully.",
-              type: "success"
-            }
-          ]
+          preferences: DEFAULT_PREFS
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), "utf-8");
         return initialDB;
@@ -299,10 +260,7 @@ export class DBManager {
       console.error("Failed to load local DB, fallback to memory", e);
       return {
         briefings: seedBriefings(),
-        preferences: DEFAULT_PREFS,
-        feedbacks: [],
-        analytics_events: [],
-        live_logs: []
+        preferences: DEFAULT_PREFS
       };
     }
   }
@@ -435,8 +393,7 @@ export class DBManager {
         } else if (data) {
           return {
             topics: safeParseArray(data.topics || ["technology", "startups"]),
-            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any,
-            notifications_enabled: data.notifications_enabled ?? true
+            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any
           };
         }
       } catch (err: any) {
@@ -462,7 +419,6 @@ export class DBManager {
           .upsert({
             user_id: userId,
             briefing_frequency_hours: preferences.briefing_frequency_hours,
-            notifications_enabled: preferences.notifications_enabled,
             updated_at: new Date().toISOString()
           });
 
@@ -472,194 +428,6 @@ export class DBManager {
       } catch (err: any) {
         handleSupabaseError("savePreferences", err);
       }
-    }
-  }
-
-  static async getFeedbacks(): Promise<Feedback[]> {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from("feedback")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          handleSupabaseError("getFeedbacks", error);
-        } else if (data) {
-          return data;
-        }
-      } catch (err: any) {
-        handleSupabaseError("getFeedbacks", err);
-      }
-    }
-
-    const db = this.loadDB();
-    return db.feedbacks;
-  }
-
-  static async addFeedback(feedback: Feedback, userEmail?: string): Promise<void> {
-    const db = this.loadDB();
-    db.feedbacks.push(feedback);
-    this.saveDB(db);
-
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const userId = isValidUUID(userEmail) ? userEmail : null;
-        const feedbackId = isValidUUID(feedback.id) ? feedback.id : randomUUID();
-
-        if (isValidUUID(feedback.briefing_item_id)) {
-          const insertPayload: any = {
-            id: feedbackId,
-            briefing_item_id: feedback.briefing_item_id,
-            feedback_type: feedback.feedback_type === "useful" || feedback.feedback_type === "not_relevant" ? feedback.feedback_type : "useful",
-            created_at: feedback.created_at || new Date().toISOString()
-          };
-          if (userId) {
-            insertPayload.user_id = userId;
-          }
-
-          const { error } = await supabase
-            .from("feedback")
-            .insert([insertPayload]);
-
-          if (error) {
-            handleSupabaseError("addFeedback", error);
-          }
-        }
-      } catch (err: any) {
-        handleSupabaseError("addFeedback", err);
-      }
-    }
-  }
-
-  static async getAnalyticsEvents(): Promise<AnalyticsEvent[]> {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from("analytics_events")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          handleSupabaseError("getAnalyticsEvents", error);
-        } else if (data) {
-          return data.map((d: any) => ({
-            id: d.id,
-            event_name: d.event_name,
-            metadata: typeof d.metadata === "string" ? JSON.parse(d.metadata) : d.metadata,
-            created_at: d.created_at
-          }));
-        }
-      } catch (err: any) {
-        handleSupabaseError("getAnalyticsEvents", err);
-      }
-    }
-
-    const db = this.loadDB();
-    return db.analytics_events.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }
-
-  static async addAnalyticsEvent(event_name: string, metadata: Record<string, any>, userEmail?: string): Promise<void> {
-    const id = "evt-" + Math.random().toString(36).substr(2, 9);
-    const created_at = new Date().toISOString();
-
-    const db = this.loadDB();
-    const newEvent: AnalyticsEvent = {
-      id,
-      event_name,
-      metadata,
-      created_at
-    };
-    db.analytics_events.push(newEvent);
-    this.saveDB(db);
-
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const userId = isValidUUID(userEmail) ? userEmail : null;
-        const insertPayload: any = {
-          id,
-          event_name,
-          metadata,
-          created_at
-        };
-        if (userId) {
-          insertPayload.user_id = userId;
-        }
-
-        const { error } = await supabase
-          .from("analytics_events")
-          .insert([insertPayload]);
-
-        if (error) {
-          handleSupabaseError("addAnalyticsEvent", error);
-        }
-      } catch (err: any) {
-        handleSupabaseError("addAnalyticsEvent", err);
-      }
-    }
-  }
-
-  static async getLiveLogs(): Promise<LiveRadarLog[]> {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from("live_logs")
-          .select("*")
-          .order("timestamp", { ascending: false })
-          .limit(50);
-
-        if (error) {
-          handleSupabaseError("getLiveLogs", error);
-        } else if (data) {
-          return data.map((d: any) => ({
-            timestamp: d.timestamp,
-            message: d.message,
-            type: d.type
-          }));
-        }
-      } catch (err: any) {
-        handleSupabaseError("getLiveLogs", err);
-      }
-    }
-
-    const db = this.loadDB();
-    return db.live_logs.slice(-50); // Keep last 50 logs
-  }
-
-  static addLiveLog(message: string, type: "info" | "success" | "warning" | "error" = "info") {
-    // 1. Local logging
-    const db = this.loadDB();
-    db.live_logs.push({
-      timestamp: new Date().toISOString(),
-      message,
-      type
-    });
-    this.saveDB(db);
-
-    // 2. Supabase logging (background promise, completely non-blocking for callers)
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      (async () => {
-        try {
-          const { error } = await supabase
-            .from("live_logs")
-            .insert([{
-              timestamp: new Date().toISOString(),
-              message,
-              type
-            }]);
-          if (error) {
-            handleSupabaseError("addLiveLog background", error);
-          }
-        } catch (err: any) {
-          handleSupabaseError("addLiveLog background", err);
-        }
-      })();
     }
   }
 
@@ -723,42 +491,6 @@ export class DBManager {
         }
       } catch (err: any) {
         handleSupabaseError("updateStoryState", err);
-      }
-    }
-  }
-
-  static async clearLiveLogs(): Promise<void> {
-    const db = this.loadDB();
-    db.live_logs = [
-      {
-        timestamp: new Date().toISOString(),
-        message: "Radar logs flushed. Ready to scan.",
-        type: "info"
-      }
-    ];
-    this.saveDB(db);
-
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from("live_logs")
-          .delete()
-          .neq("timestamp", "1970-01-01T00:00:00Z");
-
-        if (error) {
-          console.warn("Supabase clearLiveLogs warning:", error.message);
-        }
-
-        await supabase
-          .from("live_logs")
-          .insert([{
-            timestamp: new Date().toISOString(),
-            message: "Radar logs flushed. Ready to scan.",
-            type: "info"
-          }]);
-      } catch (err: any) {
-        console.warn("Supabase clearLiveLogs exception:", err.message || err);
       }
     }
   }

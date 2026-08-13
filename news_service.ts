@@ -155,7 +155,7 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
         });
       }
     } catch (e) {
-      // ignore individual article parse errors to prevent full crash
+      // ignore individual article parse errors
     }
   }
   return articles;
@@ -163,7 +163,7 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
 
 export class NewsService {
   static async fetchLatestArticles(customFeeds: string[]): Promise<Omit<Article, "id">[]> {
-    DBManager.addLiveLog("Starting News Retrieval Engine...", "info");
+    console.info("[NewsService] Starting News Retrieval Engine...");
 
     const feedsToScrape = customFeeds.length > 0 ? customFeeds : [
       "https://techcrunch.com/feed/",
@@ -186,9 +186,8 @@ export class NewsService {
           }
         }
 
-        DBManager.addLiveLog(`Fetching ${sourceName} RSS feed from ${url}`, "info");
+        console.info(`[NewsService] Fetching ${sourceName} RSS feed from ${url}`);
 
-        // Fetch feed with shorter timeout (3s) to prevent Vercel Serverless Function timeouts
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
 
@@ -209,14 +208,14 @@ export class NewsService {
         const parsed = parseRSS(xmlText, sourceName);
 
         if (parsed.length > 0) {
-          DBManager.addLiveLog(`Successfully ingested ${parsed.length} raw stories from ${sourceName}`, "success");
+          console.info(`[NewsService] Successfully ingested ${parsed.length} raw stories from ${sourceName}`);
           return parsed;
         } else {
-          DBManager.addLiveLog(`Zero news items found in ${sourceName} feed XML.`, "warning");
+          console.warn(`[NewsService] Zero news items found in ${sourceName} feed XML.`);
           return [];
         }
       } catch (err: any) {
-        DBManager.addLiveLog(`Feed fetch failed for ${url}: ${err.message || err}. Falling back to internal seed pool for this source.`, "warning");
+        console.warn(`[NewsService] Feed fetch failed for ${url}: ${err.message || err}. Falling back to internal seed pool for this source.`);
         return [];
       }
     });
@@ -234,12 +233,12 @@ export class NewsService {
     const remainingPresets = SAMPLE_PRESETS.filter(p => !articles.some(a => a.title.toLowerCase() === p.title.toLowerCase()));
     articles.push(...remainingPresets);
 
-    DBManager.addLiveLog(`Aggregation completed. Total of ${articles.length} stories parsed and ready for AI processing.`, "success");
+    console.info(`[NewsService] Aggregation completed. Total of ${articles.length} stories parsed and ready for AI processing.`);
     return articles;
   }
 
   static async runRadarIntelligence(articles: Omit<Article, "id">[], topics: string[]): Promise<Briefing> {
-    DBManager.addLiveLog("Analyzing and clustering story feeds...", "info");
+    console.info("[NewsService] Analyzing and clustering story feeds...");
 
     const sorted = articles.slice(0, 20);
 
@@ -272,7 +271,7 @@ DIRECTIVES:
 Return your response strictly matching the schema.
 `;
 
-    DBManager.addLiveLog("Generating briefing with AI models...", "info");
+    console.info("[NewsService] Generating briefing with AI models...");
 
     try {
       const client = getGeminiClient();
@@ -376,10 +375,10 @@ Return your response strictly matching the schema.
         target_read_time_seconds: targetReadTimeSeconds
       };
 
-      DBManager.addLiveLog(`Briefing generation complete with ${briefingCards.length} prioritized updates.`, "success");
+      console.info(`[NewsService] Briefing generation complete with ${briefingCards.length} prioritized updates.`);
       return newBriefing;
     } catch (error: any) {
-      DBManager.addLiveLog(`AI processing note: ${error.message || error}. Compiling briefing using fallback model.`, "warning");
+      console.warn(`[NewsService] AI processing note: ${error.message || error}. Compiling briefing using fallback model.`);
       
       const briefingId = randomUUID();
       const sourcePool = articles.length > 0 ? articles : SAMPLE_PRESETS;
@@ -427,7 +426,7 @@ Return your response strictly matching the schema.
         target_read_time_seconds: targetReadTimeSeconds
       };
 
-      DBManager.addLiveLog(`Briefing compiled with ${processedCards.length} verified updates.`, "success");
+      console.info(`[NewsService] Briefing compiled with ${processedCards.length} verified updates.`);
       return newBriefing;
     }
   }

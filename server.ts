@@ -7,7 +7,7 @@ import express from "express";
 import path from "path";
 import { DBManager } from "./server_db.js";
 import { NewsService } from "./news_service.js";
-import { UserPreferences, Feedback } from "./src/types.js";
+import { UserPreferences } from "./src/types.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -69,12 +69,7 @@ app.post("/api/briefings/generate", async (req, res) => {
     // 3. Save briefing
     await DBManager.addBriefing(briefing);
 
-    // 4. Log analytics event
-    await DBManager.addAnalyticsEvent("briefing_generated", {
-      briefing_id: briefing.id,
-      card_count: briefing.cards.length,
-      topics
-    });
+    console.info(`[Server] Briefing generated successfully: ${briefing.id}`);
 
     res.json(briefing);
   } catch (err: any) {
@@ -118,7 +113,7 @@ app.get("/api/preferences", async (req, res) => {
 
 app.put("/api/preferences", async (req, res) => {
   try {
-    const { topics, briefing_frequency_hours, notifications_enabled } = req.body;
+    const { topics, briefing_frequency_hours } = req.body;
     const userEmail = req.headers["x-user-email"] as string | undefined;
 
     const validTopics = Array.isArray(topics) ? topics : ["technology", "startups"];
@@ -126,80 +121,15 @@ app.put("/api/preferences", async (req, res) => {
 
     const updatedPrefs: UserPreferences = {
       topics: validTopics,
-      briefing_frequency_hours: validFreq,
-      notifications_enabled: Boolean(notifications_enabled)
+      briefing_frequency_hours: validFreq
     };
 
     await DBManager.savePreferences(updatedPrefs, userEmail);
-    await DBManager.addAnalyticsEvent("preferences_updated", updatedPrefs);
-    DBManager.addLiveLog("User preferences updated.", "success");
+    console.info("[Server] User preferences updated successfully.");
 
     res.json({ ok: true, preferences: updatedPrefs });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to save user preferences" });
-  }
-});
-
-// API: Feedback collector
-app.get("/api/feedback", async (req, res) => {
-  try {
-    const feedbacks = await DBManager.getFeedbacks();
-    res.json(feedbacks);
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to load feedback listings" });
-  }
-});
-
-app.post("/api/feedback", async (req, res) => {
-  try {
-    const { card_id, feedback_type, comment } = req.body;
-    
-    if (!card_id || !feedback_type) {
-      return res.status(400).json({ error: "Card ID and Feedback Type required" });
-    }
-
-    const feedback: Feedback = {
-      id: "fdb-" + Math.random().toString(36).substr(2, 9),
-      briefing_item_id: card_id,
-      feedback_type: feedback_type === "useful" || feedback_type === "not_relevant" ? feedback_type : "useful",
-      created_at: new Date().toISOString()
-    };
-
-    await DBManager.addFeedback(feedback);
-    await DBManager.addAnalyticsEvent("feedback_submitted", { card_id, feedback_type, has_comment: !!comment });
-    DBManager.addLiveLog(`User submitted feedback response [${feedback_type.toUpperCase()}] for card ${card_id}.`, "info");
-
-    res.json({ ok: true, feedback });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to record feedback response" });
-  }
-});
-
-// API: Get background logs
-app.get("/api/logs", async (req, res) => {
-  res.json(await DBManager.getLiveLogs());
-});
-
-app.post("/api/logs/clear", async (req, res) => {
-  await DBManager.clearLiveLogs();
-  res.json({ ok: true });
-});
-
-// API: Capture custom analytics event (e.g. from the client clicks for audit tracer)
-app.get("/api/analytics", async (req, res) => {
-  res.json(await DBManager.getAnalyticsEvents());
-});
-
-app.post("/api/analytics", async (req, res) => {
-  try {
-    const { event_name, metadata } = req.body;
-    if (!event_name) {
-      return res.status(400).json({ error: "event_name is required" });
-    }
-    await DBManager.addAnalyticsEvent(event_name, metadata || {});
-    res.json({ ok: true });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to register analytics trace" });
   }
 });
 

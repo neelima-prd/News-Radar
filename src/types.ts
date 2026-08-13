@@ -41,26 +41,4 @@ export interface Briefing {
 export interface UserPreferences {
   topics: string[]; // e.g. ["technology", "startups"]
   briefing_frequency_hours: 3 | 6 | 12 | 24; // default 6
-  notifications_enabled?: boolean;
 }
-
-export interface Feedback {
-  id: string;
-  briefing_item_id: string;
-  feedback_type: "useful" | "not_relevant";
-  created_at: string;
-}
-
-export interface AnalyticsEvent {
-  id: string;
-  event_name: string;
-  metadata: Record<string, any>;
-  created_at: string;
-}
-
-export interface LiveRadarLog {
-  timestamp: string;
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-}
-

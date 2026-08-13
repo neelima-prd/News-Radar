@@ -7,32 +7,16 @@ import React, { useEffect, useState } from "react";
 import {
   Sparkles,
   RefreshCw,
-  Sliders,
   History,
-  Globe,
-  Bell,
-  BellOff,
   User,
-  Radio,
-  Plus,
-  Trash2,
   Check,
   AlertTriangle,
   ArrowRight,
   Settings,
   X,
-  ChevronDown,
-  ChevronUp,
-  TrendingUp,
-  BrainCircuit,
-  MessageSquare,
-  Zap,
   Moon,
   Sun,
-  BookOpen,
-  LogOut,
-  Layers,
-  Filter,
+  Zap,
   CheckCircle2
 } from "lucide-react";
 import { Briefing, UserPreferences } from "./types";
@@ -82,16 +66,13 @@ export default function App() {
   const [briefings, setBriefings] = useState<Briefing[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>({
     topics: ["technology", "startups"],
-    briefing_frequency_hours: 6,
-    notifications_enabled: true
+    briefing_frequency_hours: 6
   });
   const [loadingRadar, setLoadingRadar] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [isKeyError, setIsKeyError] = useState(false);
-  const [pollingTrigger, setPollingTrigger] = useState(0);
 
   // Supabase Auth and Config states
-  const [supabase, setSupabase] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -167,8 +148,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    let unsubscribeFn: (() => void) | undefined;
-
     const initAuth = async () => {
       try {
         const configRes = await fetch("/api/config");
@@ -178,7 +157,6 @@ export default function App() {
             try {
               const { createClient } = await import("@supabase/supabase-js");
               const client = createClient(config.supabaseUrl, config.supabaseAnonKey);
-              setSupabase(client);
 
               // Supabase Anonymous Auth - automatically sign in on first open
               let currentSession = null;
@@ -199,16 +177,13 @@ export default function App() {
               await loadData(currentSession);
 
               // Listen to auth changes
-              const { data: { subscription } } = client.auth.onAuthStateChange((_event, newSession) => {
+              client.auth.onAuthStateChange((_event, newSession) => {
                 setSession(newSession);
                 if (newSession) {
                   loadData(newSession);
                 }
               });
 
-              unsubscribeFn = () => {
-                subscription.unsubscribe();
-              };
               setAuthLoading(false);
             } catch (supErr) {
               console.warn("Supabase client init failed, falling back to standard mode:", supErr);
@@ -233,17 +208,6 @@ export default function App() {
     initAuth();
   }, []);
 
-  const triggerAnalytics = async (event_name: string, metadata: Record<string, any>) => {
-    try {
-      await fetch("/api/analytics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_name, metadata })
-      });
-      setPollingTrigger(prev => prev + 1);
-    } catch (_) {}
-  };
-
   const handleTopicToggle = (topicId: string) => {
     const currentTopics = preferences?.topics || [];
     let updatedTopics: string[];
@@ -259,7 +223,6 @@ export default function App() {
     };
     setPreferences(updatedPrefs);
     handleSavePreferences(updatedPrefs);
-    triggerAnalytics("topics_updated", { topics: updatedTopics });
   };
 
   const handleFrequencyChange = (freqHours: number) => {
@@ -270,7 +233,6 @@ export default function App() {
     };
     setPreferences(updatedPrefs);
     handleSavePreferences(updatedPrefs);
-    triggerAnalytics("frequency_updated", { briefing_frequency_hours: freqHours });
   };
 
   const handleSavePreferences = async (updated: UserPreferences) => {
@@ -300,10 +262,6 @@ export default function App() {
     setLoadingRadar(true);
     setRadarError(null);
     setIsKeyError(false);
-    
-    triggerAnalytics("briefing_refresh_triggered", {
-      subscribed_topics: preferences?.topics || []
-    });
 
     const userId = session?.user?.id || "default";
 
@@ -336,10 +294,8 @@ export default function App() {
       }
       
       await loadData();
-      setPollingTrigger(prev => prev + 1);
     } catch (err: any) {
       setRadarError(err.message || "Refresh failed.");
-      triggerAnalytics("briefing_refresh_failed", { reason: err.message });
     } finally {
       setLoadingRadar(false);
     }
@@ -396,8 +352,6 @@ export default function App() {
     } catch (e) {
       console.warn("Failed to persist story state:", e);
     }
-
-    triggerAnalytics("story_marked_read", { card_id: cardId, is_read: nextReadState });
   };
 
   const handleNextStory = (currentIndex: number) => {
@@ -990,7 +944,7 @@ export default function App() {
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
                       theme === "dark"
                         ? "bg-slate-800/50 border-slate-700 hover:bg-slate-800 text-slate-300"
-                        : "bg-white border-gray-200 hover:bg-gray-50 text-gray-750"
+                        : "bg-white border-gray-200 hover:bg-gray-50 text-gray-755"
                     }`}
                   >
                     Reset Progress
@@ -1023,7 +977,6 @@ export default function App() {
                 <InsightCard
                   card={topStory}
                   isTopStory={true}
-                  onFeedbackSubmitted={() => setPollingTrigger(prev => prev + 1)}
                   theme={theme}
                   isRead={readStoryIds.includes(topStory.id)}
                   onMarkAsRead={() => handleMarkAsRead(topStory.id)}
@@ -1060,7 +1013,6 @@ export default function App() {
                         key={card.id}
                         card={card}
                         isTopStory={false}
-                        onFeedbackSubmitted={() => setPollingTrigger(prev => prev + 1)}
                         theme={theme}
                         isRead={readStoryIds.includes(card.id)}
                         onMarkAsRead={() => handleMarkAsRead(card.id)}

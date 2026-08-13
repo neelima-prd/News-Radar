@@ -4,14 +4,13 @@
  */
 
 import React, { useState } from "react";
-import { ThumbsUp, ThumbsDown, BookOpen, ExternalLink, ChevronRight, Check, ArrowRight } from "lucide-react";
+import { BookOpen, ExternalLink, ChevronRight, Check, ArrowRight } from "lucide-react";
 import { BriefingCard } from "../types";
 import { motion, AnimatePresence } from "motion/react";
 
 export function InsightCard({
   card,
   isTopStory = false,
-  onFeedbackSubmitted,
   theme = "dark",
   isRead = false,
   onMarkAsRead,
@@ -22,7 +21,6 @@ export function InsightCard({
   key?: React.Key;
   card: BriefingCard;
   isTopStory?: boolean;
-  onFeedbackSubmitted?: () => void;
   theme?: "dark" | "light";
   isRead?: boolean;
   onMarkAsRead?: () => void | Promise<void>;
@@ -30,10 +28,6 @@ export function InsightCard({
   hasNextStory?: boolean;
   isActive?: boolean;
 }) {
-  const [rated, setRated] = useState<"useful" | "not_relevant" | null>(null);
-  const [comment, setComment] = useState("");
-  const [showCommentBox, setShowCommentBox] = useState(false);
-  const [commentSaved, setCommentSaved] = useState(false);
   const [showSources, setShowSources] = useState(false);
 
   const getPriorityBadgeClass = (priority: string) => {
@@ -50,62 +44,6 @@ export function InsightCard({
     return theme === "dark"
       ? "bg-slate-800/60 text-slate-400 border-slate-700/50"
       : "bg-gray-100 text-gray-700 border-gray-200";
-  };
-
-  const handleRate = async (type: "useful" | "not_relevant") => {
-    try {
-      setRated(type);
-      setShowCommentBox(true);
-      
-      const response = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          briefing_item_id: card.id,
-          feedback_type: type
-        })
-      });
-      if (response.ok) {
-        onFeedbackSubmitted();
-      }
-    } catch (_) {}
-  };
-
-  const handleSaveComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-
-    try {
-      await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          briefing_item_id: card.id,
-          feedback_type: rated || "useful",
-          comment: comment.trim()
-        })
-      });
-      setCommentSaved(true);
-      setTimeout(() => {
-        setShowCommentBox(false);
-        setCommentSaved(false);
-        setComment("");
-      }, 1800);
-      onFeedbackSubmitted();
-    } catch (_) {}
-  };
-
-  const handleSourceClick = async (sourceUrl: string, articleTitle: string) => {
-    try {
-      await fetch("/api/analytics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_name: "source_article_clicked",
-          metadata: { card_id: card.id, title: articleTitle, url: sourceUrl }
-        })
-      });
-    } catch (_) {}
   };
 
   const defaultWhySelected = [
@@ -252,7 +190,6 @@ export function InsightCard({
                       href={art.url}
                       target="_blank"
                       referrerPolicy="no-referrer"
-                      onClick={() => handleSourceClick(art.url, art.title)}
                       className={`flex items-start gap-2.5 text-xs border-b pb-2 last:pb-0 last:border-0 transition ${
                         theme === "dark" 
                           ? "text-slate-300 hover:text-sky-400 border-slate-800/40" 
@@ -275,87 +212,6 @@ export function InsightCard({
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Feedback & Actions */}
-      <div className={`px-6 py-3.5 border-t flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3 ${
-        theme === "dark" ? "bg-[#0b0f19]/40 border-slate-800/60" : "bg-[#FAFBFB] border-gray-100"
-      }`}>
-        <span className={theme === "dark" ? "text-slate-400" : "text-gray-500"}>
-          Was this story relevant to your interests?
-        </span>
-        
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => handleRate("useful")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold transition cursor-pointer ${
-              rated === "useful" 
-                ? "bg-sky-500/10 text-sky-400 border-sky-500/30" 
-                : theme === "dark"
-                  ? "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-800"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            <span>👍 Useful</span>
-          </button>
-          <button
-            onClick={() => handleRate("not_relevant")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold transition cursor-pointer ${
-              rated === "not_relevant" 
-                ? "bg-rose-500/10 text-rose-400 border-rose-500/30" 
-                : theme === "dark"
-                  ? "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-800"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            <span>👎 Not Relevant</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Optional feedback comment */}
-      <AnimatePresence>
-        {showCommentBox && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className={`overflow-hidden border-t ${
-              theme === "dark" ? "bg-[#0b0f19]/60 border-slate-800/60" : "bg-[#FAFBFB] border-gray-100"
-            }`}
-          >
-            <form onSubmit={handleSaveComment} className="p-4 pt-2">
-              {commentSaved ? (
-                <div className={`flex items-center gap-1.5 text-xs font-semibold py-1.5 justify-center ${
-                  theme === "dark" ? "text-emerald-400" : "text-emerald-600"
-                }`}>
-                  <Check size={14} className="stroke-[3]" /> Thank you for your feedback!
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Provide additional details to improve future briefings..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className={`flex-1 border rounded-xl px-3.5 py-1.5 text-xs focus:outline-none ${
-                      theme === "dark"
-                        ? "bg-slate-900 text-white border-slate-700 focus:border-sky-500"
-                        : "bg-white text-gray-900 border-gray-200 focus:ring-1 focus:ring-blue-500"
-                    }`}
-                  />
-                  <button type="submit" className={`rounded-xl px-4 py-1.5 text-xs font-black cursor-pointer transition ${
-                    theme === "dark"
-                      ? "bg-sky-500 hover:bg-sky-400 text-slate-950"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}>
-                    Submit
-                  </button>
-                </div>
-              )}
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Reading workflow controls */}
       <div className={`px-6 py-4 border-t flex items-center justify-between gap-3 ${
@@ -394,4 +250,3 @@ export function InsightCard({
     </motion.div>
   );
 }
-
