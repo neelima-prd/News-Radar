@@ -94,22 +94,859 @@
           ]
         }
       ]
+    },
+    {
+      "id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+      "generated_at": "2026-08-13T08:57:02.959Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "53407c64-a421-45b4-95b7-709536925ffe",
+          "briefing_id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Google Unveils Pixel 11 Lineup and Next-Gen Gemini AI Features at Made by Google '26",
+          "summary": "Google officially announced its Pixel 11 series, the Pixel Watch 5, and a new AirTag competitor called the Pixel Tag. The hardware showcases extensive Gemini AI integrations, alongside user convenience updates like tap-to-share for Quick Share.",
+          "why_it_matters": "Google's flagship launch highlights the absolute convergence of consumer hardware and agentic AI, positioning their ecosystem as a direct competitor to Apple's intelligence suite.",
+          "category": "Technology",
+          "why_selected": [
+            "Features major announcements from a landmark annual Google event",
+            "Details high-impact consumer hardware and AI integrations",
+            "Synthesizes multiple sources covering the product ecosystem"
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google &#8217;26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Google&#8217;s Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "31bc376d-623e-4850-af10-604ccb566d00",
+          "briefing_id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "OpenAI-Backed Thrive Holdings Raises $2B for Enterprise AI Deployment",
+          "summary": "Thrive Holdings has secured $2 billion in funding at a $12 billion valuation from major investors including SoftBank and D1 Capital Partners. The company aims to accelerate the integration of AI tools across enterprise environments.",
+          "why_it_matters": "This multi-billion-dollar round demonstrates that institutional investors remain highly committed to scaling commercial enterprise AI products, driving consolidation around backed champions.",
+          "category": "Startups",
+          "why_selected": [
+            "Highlights a massive multi-billion dollar fundraising event",
+            "Focuses on high-growth enterprise AI market dynamics",
+            "Involves top-tier venture capital and tech-backed startups"
+          ],
+          "source_articles": [
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "526a4d88-396d-43f2-bde3-d6ac1a6887e0",
+          "briefing_id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Amazon Sparks Backlash Over Opt-Out AI Training Policy for Twitch Streamers",
+          "summary": "Amazon has implemented an opt-out policy by default to train its AI models on Twitch streamers' content. Twitch's Chief Product Officer publicly acknowledged that the default is necessary because users would not opt in voluntarily.",
+          "why_it_matters": "This development underscores the aggressive tactics tech giants are using to secure training data, escalating the ethical and legal friction between platform operators and creators.",
+          "category": "Technology",
+          "why_selected": [
+            "Covers a controversial policy shift by a major cloud and streaming operator",
+            "Highlights the critical ongoing debate over AI training data ethics",
+            "Includes candid executive comments on user consent"
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers&#8217; content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "b90b2565-820d-44e9-9ca9-5158673c6dc3",
+          "briefing_id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "AI Coding Startup Cognition Eyestones New $40B Valuation Round",
+          "summary": "Autonomous coding startup Cognition is reportedly in discussions to raise new capital at a staggering $40 billion valuation. This potential round comes only months after the company secured $1 billion at a $26 billion valuation.",
+          "why_it_matters": "Cognition's skyrocketing valuation shows the immense financial premiums commanded by startups developing agentic AI capable of software engineering.",
+          "category": "Startups",
+          "why_selected": [
+            "Highlights a potential record-breaking valuation step-up in AI",
+            "Focuses on the high-interest autonomous software engineering sector",
+            "Reveals rapid capital velocity in the elite tier of AI startups"
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "0cd3fb2b-f71b-4cfd-afb0-799f2ba18ddb",
+          "briefing_id": "0ab444b1-945b-4c98-83b3-8b4ae25be6fd",
+          "rank": 5,
+          "priority": "IMPORTANT",
+          "headline": "Form Energy Secures $750M to Scale 100-Hour Grid Batteries",
+          "summary": "Long-duration energy storage pioneer Form Energy has raised $750 million to expand manufacturing of its iron-air battery systems. The company has already attracted high-profile customers, including Google and energy infrastructure provider Crusoe.",
+          "why_it_matters": "Storing renewable energy for multi-day periods is essential to support the massive energy demands of modern AI data centers without relying on fossil fuels.",
+          "category": "Startups",
+          "why_selected": [
+            "Illustrates the critical intersection of energy infrastructure and AI demand",
+            "Covers a significant late-stage funding round in clean tech",
+            "Features prominent clients like Google and Crusoe"
+          ],
+          "source_articles": [
+            {
+              "title": "Form Energy raises $750M to build more 100-hour batteries for the grid",
+              "url": "https://techcrunch.com/2026/08/12/form-energy-raises-750m-to-build-more-100-hour-batteries-for-the-grid/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        }
+      ],
+      "scanned_count": 127,
+      "cluster_count": 42,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 102
+    },
+    {
+      "id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+      "generated_at": "2026-08-13T09:00:17.400Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "f2091035-2e4a-446e-9005-b0e850105853",
+          "briefing_id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Google Unveils Pixel 11 Lineup and Expanded Gemini Features at Annual Showcase",
+          "summary": "Google has officially introduced its Pixel 11 series, the Pixel Watch 5, and a new tracker called Pixel Tag, alongside a major suite of Gemini AI capabilities. Key updates include a tap-to-share mode for Quick Share to enable swift contact and media sharing.",
+          "why_it_matters": "Google is tightening the integration between its hardware ecosystem and native AI, positioning Gemini as the centerpiece of its consumer strategy to outpace Apple's ecosystem integrations.",
+          "category": "Technology",
+          "why_selected": [
+            "Matches Technology interest",
+            "Major annual consumer hardware event",
+            "Covers multiple Google product updates"
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google ’26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Google’s Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "f05d5459-5fce-4a76-8b45-47f0a4c8685c",
+          "briefing_id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "Late-Stage AI Startups Seek Historic Valuations in New Multi-Billion Dollar Capital Rush",
+          "summary": "A wave of massive funding rounds is sweeping the AI ecosystem, highlighted by coding startup Cognition negotiating a $40 billion valuation. Concurrently, OpenAI-backed Thrive Holdings raised $2 billion at a $12 billion valuation, and AI startup Lovable raised $400 million at a $13.3 billion valuation.",
+          "why_it_matters": "Despite questions about AI commercialization timelines, venture capital and private equity firms are doubling down on hyper-scale AI platforms, driving private valuations to public-market heights.",
+          "category": "Startups",
+          "why_selected": [
+            "Matches Startups interest",
+            "Exposes massive macro-funding trends in AI",
+            "Covers three major private valuation updates"
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Lovable confirms new $13.3B valuation, raises another $400M",
+              "url": "https://techcrunch.com/2026/08/12/lovable-confirms-new-13-3b-valuation-raises-another-400m/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "c9a3993a-6b14-4753-9a7a-9bbc2cec12dc",
+          "briefing_id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Amazon to Auto-Enroll Twitch Streamers in AI Training Programs",
+          "summary": "Amazon announced it will train its AI models using Twitch streamers' content by default, implementing an opt-out policy rather than opt-in. Twitch leadership defended the decision, stating that low participation would render an opt-in system ineffective.",
+          "why_it_matters": "This highlights a growing shift among major tech platforms toward default-on data harvesting policies, risking further backlash from independent content creators over IP and consent rights.",
+          "category": "Technology",
+          "why_selected": [
+            "Matches Technology interest",
+            "Exposes high-profile tension over AI data licensing",
+            "Highlights creator economy and platform dynamics"
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers’ content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "0503cab2-edab-4944-b960-b656aaabf917",
+          "briefing_id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "Form Energy Raises $750M to Build Long-Duration Iron-Air Batteries for the Grid",
+          "summary": "Energy storage startup Form Energy has secured $750 million in new funding to expand its manufacturing capabilities for its 100-hour iron-air batteries. The company has already lined up major cloud and technology clients like Google and Crusoe.",
+          "why_it_matters": "As tech giants build out massive, power-hungry AI data centers, long-duration grid storage startups are becoming critical infrastructure partners for carbon-free energy goals.",
+          "category": "Startups",
+          "why_selected": [
+            "Matches Startups interest",
+            "Demonstrates deep-tech clean energy scale",
+            "Directly links to infrastructure demands of AI"
+          ],
+          "source_articles": [
+            {
+              "title": "Form Energy raises $750M to build more 100-hour batteries for the grid",
+              "url": "https://techcrunch.com/2026/08/12/form-energy-raises-750m-to-build-more-100-hour-batteries-for-the-grid/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "129163bf-77b7-43ca-8829-f4508892f7cc",
+          "briefing_id": "db555f7f-041f-47b5-b027-5c7948cca05a",
+          "rank": 5,
+          "priority": "IMPORTANT",
+          "headline": "AI Pioneers Geoffrey Hinton, Fei-Fei Li, and Andrew Ng Advocate for Open-Source Dev",
+          "summary": "At the Ai4 conference, AI leaders Geoffrey Hinton, Fei-Fei Li, and Andrew Ng debated safety, national security, and regulation. The trio championed open-source AI access as a vital mechanism for maintaining competitive innovation against international rivals like China.",
+          "why_it_matters": "The united stance of these industry pioneers adds heavyweight intellectual backing to the open-source movement, directly challenging proposals for heavily restricted or closed-source licensing models.",
+          "category": "Technology",
+          "why_selected": [
+            "Matches Technology interest",
+            "Involves top-tier industry thought leaders",
+            "Highlights key regulatory and competitive geopolitical debates"
+          ],
+          "source_articles": [
+            {
+              "title": "As AI safety concerns mount, three pioneers make the case for staying open",
+              "url": "https://techcrunch.com/2026/08/12/as-ai-safety-concerns-mount-three-pioneers-make-the-case-for-staying-open/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        }
+      ],
+      "scanned_count": 127,
+      "cluster_count": 42,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 116
+    },
+    {
+      "id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+      "generated_at": "2026-08-13T12:23:43.662Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "e3612251-e47b-4aac-8b1d-291a6e7419f1",
+          "briefing_id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Google Unveils Pixel 11 and Suite of Gemini AI Features at Made by Google '26",
+          "summary": "Google hosted its annual Made by Google event, announcing the new Pixel 11 smartphone lineup, the Pixel Watch 5, an AirTag-rivaling Pixel Tag, and a massive influx of Gemini AI integrations. Additionally, Google's Quick Share utility is receiving a major update, introducing a seamless tap-to-share mode for exchanging files and contacts.",
+          "why_it_matters": "Google is doubling down on deeply integrated hardware-software ecosystems powered by on-device AI. This strategy aims to defensive-guard Android against Apple's upcoming AI rollouts and establish Gemini as the default ambient assistant for consumers.",
+          "category": "Technology",
+          "why_selected": [
+            "High-impact consumer tech event",
+            "Multiple hardware and software announcements",
+            "Demonstrates Google's aggressive AI integration strategy"
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google '26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Google's Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "479bc761-294c-4cae-9b97-b5375aa580eb",
+          "briefing_id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "The AI Funding Frenzy Accelerates as Cognition, Thrive, and Lovable Target Multi-Billion Dollar Valuations",
+          "summary": "A flurry of massive funding rounds has hit the AI startup ecosystem, led by coding assistant Cognition seeking a $40 billion valuation shortly after a $26 billion round. Simultaneously, OpenAI-backed Thrive Holdings raised $2 billion at a $12 billion valuation, and AI development platform Lovable raised $400 million at a $13.3 billion valuation after surpassing a $500 million ARR.",
+          "why_it_matters": "The sheer scale of these valuations indicates that venture and late-stage private equity appetite for foundational and application-level AI software remains unsated, despite ongoing market debates regarding AI's ultimate monetization timeline.",
+          "category": "Startups",
+          "why_selected": [
+            "Massive financial impact in the startup sector",
+            "Involves multiple high-profile AI firms",
+            "Indicates strong venture interest in developer-focused AI tools"
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Lovable confirms new $13.3B valuation, raises another $400M",
+              "url": "https://techcrunch.com/2026/08/12/lovable-confirms-new-13-3b-valuation-raises-another-400m/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "25c11de2-78b5-4318-8f9f-a017eb376944",
+          "briefing_id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Twitch Sparks Outrage by Defaulting Streamers Into Amazon's AI Training Models",
+          "summary": "Amazon has announced that it will train its AI models on Twitch streamers' content by default, implementing an opt-out policy rather than an opt-in one. Twitch's Chief Product Officer defended the decision, stating that if the feature were opt-in, virtually no creators would participate, highlighting the tension between platforms needing training data and creators defending intellectual property.",
+          "why_it_matters": "This decision underscores the aggressive tactics tech giants are using to secure massive datasets for AI training, shifting the ethical and legal burden onto creators to actively guard their own content.",
+          "category": "Technology",
+          "why_selected": [
+            "Represents a critical shift in AI data collection policies",
+            "High creator-community backlash and public interest",
+            "Highlights systemic issues in platform-creator dynamics"
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers' content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "abd68ec8-289d-4169-b328-782ee5fdc3d1",
+          "briefing_id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "Security Researcher Defies Microsoft Legal Threats to Publish Windows Zero-Day Vulnerability",
+          "summary": "A security researcher operating under the moniker Nightmare Eclipse has published a new zero-day bug targeting Microsoft Windows. The release occurred despite public legal threats from Microsoft, which had attempted to prevent the publication of the unpatched vulnerability.",
+          "why_it_matters": "This incident highlights the escalating friction between independent security researchers advocating for public disclosure to force swift patching, and major corporations using legal leverage to control security vulnerabilities.",
+          "category": "Technology",
+          "why_selected": [
+            "Significant cybersecurity implications for Windows users",
+            "Exposes growing legal tensions between tech giants and security researchers",
+            "High-priority threat vector with immediate real-world risk"
+          ],
+          "source_articles": [
+            {
+              "title": "After Microsoft threatened legal action, a security researcher publishes a new Windows zero-day bug",
+              "url": "https://techcrunch.com/2026/08/12/after-microsoft-threatened-legal-action-a-security-researcher-publishes-a-new-windows-zero-day-bug/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "3d496313-f508-4e85-a691-da7ca893acb2",
+          "briefing_id": "80eafa4e-b535-483e-8335-c847ce42c49e",
+          "rank": 5,
+          "priority": "OTHER",
+          "headline": "AI Pioneers Geoffrey Hinton, Fei-Fei Li, and Andrew Ng Advocate for Open Source and Balanced Regulation",
+          "summary": "At the Ai4 conference, legendary AI researchers Geoffrey Hinton, Fei-Fei Li, and Andrew Ng debated the future of AI safety and regulation. The trio strongly advocated for keeping AI systems open-source, arguing that open access is essential for global scientific collaboration and helping Western nations remain competitive against China.",
+          "why_it_matters": "As governments worldwide draft stringent regulatory frameworks, pushback from foundational AI pioneers could shift the policy debate in favor of maintaining robust, open-source AI models rather than locking down technology to a few centralized giants.",
+          "category": "Technology",
+          "why_selected": [
+            "Involves high-profile, authoritative figures in the AI community",
+            "Addresses critical ongoing debates about safety vs. innovation",
+            "Highlights geopolitical and competitive dynamics between the US and China"
+          ],
+          "source_articles": [
+            {
+              "title": "As AI safety concerns mount, three pioneers make the case for staying open",
+              "url": "https://techcrunch.com/2026/08/12/as-ai-safety-concerns-mount-three-pioneers-make-the-case-for-staying-open/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        }
+      ],
+      "scanned_count": 60,
+      "cluster_count": 24,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 145
+    },
+    {
+      "id": "95584056-422b-4c80-9f7b-e811036ee16f",
+      "generated_at": "2026-08-13T12:47:59.576Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "408c0218-604f-4325-a9d5-6009842e6751",
+          "briefing_id": "95584056-422b-4c80-9f7b-e811036ee16f",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Google Unveils Pixel 11 Lineup and AI-First Gemini Upgrades at Made by Google 2026",
+          "summary": "Google officially announced its Pixel 11 hardware lineup, the Pixel Watch 5, and a new AirTag competitor called the Pixel Tag. Crucially, the launch was heavily centered around deep integrations of Gemini AI features across the ecosystem and an updated Quick Share tap-to-share mode.",
+          "why_it_matters": "Google is doubling down on its AI-first hardware strategy, aiming to cement Gemini's placement as the default OS-level assistant ahead of Apple's intelligence features rollouts.",
+          "category": "Technology",
+          "why_selected": [
+            "Highlights a major annual consumer hardware launch by Google",
+            "Showcases the deepening integration of generative AI into consumer operating systems",
+            "Combines multiple ecosystem and sharing feature updates"
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google '26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/Portfolio-3-1.png?resize=1200,675"
+            },
+            {
+              "title": "Google's Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/Portfolio-3-1.png?resize=1200,675",
+          "isRead": false
+        },
+        {
+          "id": "8fd98a8a-809b-4d91-9def-7ac58f2d70e5",
+          "briefing_id": "95584056-422b-4c80-9f7b-e811036ee16f",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "AI Coding Startup Cognition Reportedly in Talks to Raise Funding at a Staggering $40B Valuation",
+          "summary": "Just months after securing $1 billion at a $26 billion valuation, AI software development startup Cognition is reportedly negotiating a new mega-round. The proposed funding would value the company at an eye-watering $40 billion, fueled by intense investor demand for autonomous AI agents.",
+          "why_it_matters": "If completed, this valuation underscores the relentless, capital-intensive race in generative AI, where software development agents are positioned as the ultimate high-value enterprise solution.",
+          "category": "Startups",
+          "why_selected": [
+            "Represents a highly significant valuation milestone for AI agent startups",
+            "Highlights the rapid pace of late-stage venture capital deployment in AI",
+            "Involves one of the most closely watched unicorn startups in the coding space"
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/05/Scott-wu-headshot-e1780070238342.png?resize=1200,1004"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/05/Scott-wu-headshot-e1780070238342.png?resize=1200,1004",
+          "isRead": false
+        },
+        {
+          "id": "de1f2785-f671-47a2-9250-5ad9364108c0",
+          "briefing_id": "95584056-422b-4c80-9f7b-e811036ee16f",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Lovable Secures $400M at a $13.3B Valuation Following Explosive ARR Milestones",
+          "summary": "Norwegian startup Lovable has confirmed raising a fresh $400 million at a $13.3 billion valuation. The funding follows the company's disclosure that it reached an impressive $500 million in annualized run rate (ARR) revenue as of June.",
+          "why_it_matters": "Achieving $500 million in ARR is a rare feat for young startups, demonstrating that certain AI-driven software suites are finding rapid, massive commercial market-fit globally.",
+          "category": "Startups",
+          "why_selected": [
+            "Highlights outstanding revenue performance and growth velocity",
+            "Demonstrates massive market validation with a $13.3 billion valuation",
+            "Involves a substantial capital injection into the high-growth software market"
+          ],
+          "source_articles": [
+            {
+              "title": "Lovable confirms new $13.3B valuation, raises another $400M",
+              "url": "https://techcrunch.com/2026/08/12/lovable-confirms-new-13-3b-valuation-raises-another-400m/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2025/08/picnew-copy.png?resize=1200,801"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2025/08/picnew-copy.png?resize=1200,801",
+          "isRead": false
+        },
+        {
+          "id": "4c930d9c-2f4c-45f9-9115-9f455249a3a2",
+          "briefing_id": "95584056-422b-4c80-9f7b-e811036ee16f",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "OpenAI-Backed Thrive Holdings Secures $2B to Drive Enterprise AI Adoption",
+          "summary": "Thrive Holdings has raised $2 billion in a new funding round at a $12 billion valuation. Backed by OpenAI, the massive round saw participation from major global investors including SoftBank, D1 Capital Partners, and Altimeter Capital, with a mandate to scale AI implementations across enterprises.",
+          "why_it_matters": "This funding illustrates the shifting focus of AI capital toward late-stage commercialization and deployment partners that can bridge the gap between frontier model labs and corporate operations.",
+          "category": "Startups",
+          "why_selected": [
+            "Massive capital influx targeting enterprise AI adoption",
+            "Supported by high-profile institutional backers and OpenAI",
+            "Signifies strong market demand for enterprise-scale AI integration"
+          ],
+          "source_articles": [
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/holdings_all_team.jpg?resize=1200,407"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/holdings_all_team.jpg?resize=1200,407",
+          "isRead": false
+        },
+        {
+          "id": "7fbe3ca9-a93f-4fac-91f9-575fe92b96ba",
+          "briefing_id": "95584056-422b-4c80-9f7b-e811036ee16f",
+          "rank": 5,
+          "priority": "OTHER",
+          "headline": "Amazon to Train AI Models on Twitch Streams by Default, Sparking Creator Backlash",
+          "summary": "Amazon has announced that it will use Twitch streamers' content to train its AI models on an opt-out basis. A Twitch executive sparked controversy by admitting during a livestream that they implemented the default policy because \"if this was opt-in, nobody would opt in.\"",
+          "why_it_matters": "This highlights a growing trend of tech giants aggressively harvesting user-generated data for AI training while offering minimal agency to the creators who supply that content, intensifying the battle over digital property rights.",
+          "category": "Technology",
+          "why_selected": [
+            "Points to a significant shift in corporate policies around user data for AI training",
+            "Addresses a critical ethical debate over 'opt-out' vs 'opt-in' consent models",
+            "Directly affects millions of digital content creators and stream platforms"
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers' content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2024/03/twitch-reflection.jpg?resize=1200,799"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2024/03/twitch-reflection.jpg?resize=1200,799",
+          "isRead": false
+        }
+      ],
+      "scanned_count": 60,
+      "cluster_count": 24,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 124
+    },
+    {
+      "id": "240c3531-f32f-4992-977e-4488d2de5759",
+      "generated_at": "2026-08-13T12:48:16.440Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "cca08223-b6df-41f0-9143-114f19eb0fd8",
+          "briefing_id": "240c3531-f32f-4992-977e-4488d2de5759",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Made by Google 2026: Pixel 11, Gemini Integration, and Quick Share Upgrades Unveiled",
+          "summary": "Google hosted its annual hardware showcase, revealing the new Pixel 11 lineup, Pixel Watch 5, a new Pixel Tag tracking device, and deeply integrated Gemini AI features. Additionally, Google's Quick Share utility is introducing a seamless new tap-to-share mechanism for files and contacts.",
+          "why_it_matters": "This reinforces Google's strategy of embedding AI directly into consumer hardware, putting pressure on competitors like Apple by creating an increasingly unified hardware-software ecosystem powered by Gemini.",
+          "category": "Technology",
+          "why_selected": [
+            "Major hardware and software release from a trillion-dollar player",
+            "Represents the ongoing integration of generative AI into consumer electronics",
+            "Clusters related updates on Google's ecosystem from multiple announcements"
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google '26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Google's Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "fd10473e-94a5-4064-b62b-23367a1c751a",
+          "briefing_id": "240c3531-f32f-4992-977e-4488d2de5759",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "Valuations Skyrocket as Cognition, Thrive, and Lovable Secure Billions in New Funding Rounds",
+          "summary": "The AI startup funding market remains red hot. AI-powered coding assistant Cognition is reportedly negotiating a new round at a staggering $40 billion valuation, while OpenAI-backed enterprise AI player Thrive raised $2 billion at a $12 billion valuation. Meanwhile, developer tool Lovable secured $400 million, confirming a $13.3 billion valuation.",
+          "why_it_matters": "These massive capital injections demonstrate that investor appetite for foundational and specialized AI tools is accelerating, despite ongoing debates about profitability timelines and market consolidation.",
+          "category": "Startups",
+          "why_selected": [
+            "Highlights an active macro trend in startup funding and valuation metrics",
+            "Covers three major private investment events simultaneously",
+            "Illustrates intense market confidence in generative AI enterprise tools"
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Lovable confirms new $13.3B valuation, raises another $400M",
+              "url": "https://techcrunch.com/2026/08/12/lovable-confirms-new-13-3b-valuation-raises-another-400m/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "2c00a9b5-1bc3-4d8d-9f43-d2c3e6a43755",
+          "briefing_id": "240c3531-f32f-4992-977e-4488d2de5759",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Amazon Draws Creator Backlash by Enabling Default AI Training for Twitch Streamers",
+          "summary": "Amazon has announced that it will use Twitch streamers' broadcast content for training its AI models by default, requiring creators to manually opt out if they object. Twitch's Chief Product Officer admitted that the default setting is essential because very few users would proactively opt in.",
+          "why_it_matters": "This decision highlights the growing friction between major tech platforms looking for vast datasets to train AI models and the creators who generate that content, marking a pivotal moment for user consent policies.",
+          "category": "Technology",
+          "why_selected": [
+            "Exposes a shift in platform-level data-harvesting policies",
+            "Addresses a major point of tension in the creator economy",
+            "Highlights the high-stakes demand for proprietary training data"
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers' content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "53630808-9787-4270-b0e1-26f94fa8ce4c",
+          "briefing_id": "240c3531-f32f-4992-977e-4488d2de5759",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "Grid Battery Pioneer Form Energy Secures $750M to Scale Long-Duration Energy Storage",
+          "summary": "Form Energy has raised $750 million to ramp up production of its iron-air batteries, which can discharge power for up to 100 hours. The round follows significant customer acquisitions, including major commitments from Google and Crusoe to support their clean energy operations.",
+          "why_it_matters": "Long-duration energy storage is a critical bottleneck for scaling renewable energy on the national power grid, making Form Energy's technology essential to meeting corporate clean energy targets.",
+          "category": "Startups",
+          "why_selected": [
+            "Significant funding milestone for clean energy infrastructure",
+            "Represents a major milestone in deeptech and physical hardware scaling",
+            "Shows market traction with massive tech customers like Google"
+          ],
+          "source_articles": [
+            {
+              "title": "Form Energy raises $750M to build more 100-hour batteries for the grid",
+              "url": "https://techcrunch.com/2026/08/12/form-energy-raises-750m-to-build-more-100-hour-batteries-for-the-grid/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        },
+        {
+          "id": "2cc7fdab-8c56-4b0b-b43e-f25b654de930",
+          "briefing_id": "240c3531-f32f-4992-977e-4488d2de5759",
+          "rank": 5,
+          "priority": "IMPORTANT",
+          "headline": "AI Pioneers Hinton, Li, and Ng Advocate for Open Source and Balanced Regulation",
+          "summary": "At the Ai4 conference, three leading AI figures—Geoffrey Hinton, Fei-Fei Li, and Andrew Ng—debated safety, open-source access, and geopolitical competitiveness. The group collectively argued that keeping AI development open is essential for innovation and maintaining a competitive edge.",
+          "why_it_matters": "As governments worldwide draft stringent safety and licensing frameworks, advocacy for open-source AI from its original pioneers serves as a critical counterweight to corporate lobbying for closed, proprietary models.",
+          "category": "Technology",
+          "why_selected": [
+            "Features insights from highly influential industry thought leaders",
+            "Addresses the crucial regulatory and safety landscape for AI",
+            "Contributes to the ongoing debate over open versus closed-source ecosystems"
+          ],
+          "source_articles": [
+            {
+              "title": "As AI safety concerns mount, three pioneers make the case for staying open",
+              "url": "https://techcrunch.com/2026/08/12/as-ai-safety-concerns-mount-three-pioneers-make-the-case-for-staying-open/",
+              "source": "TechCrunch"
+            }
+          ],
+          "isRead": false
+        }
+      ],
+      "scanned_count": 60,
+      "cluster_count": 24,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 128
+    },
+    {
+      "id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+      "generated_at": "2026-08-13T12:49:01.069Z",
+      "is_automated": false,
+      "cards": [
+        {
+          "id": "48e94a9d-d78b-4f1f-9135-90e36f4d094e",
+          "briefing_id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+          "rank": 1,
+          "priority": "TOP STORY",
+          "headline": "Google Unveils Pixel 11 Lineup, 'Pixel Tag' Tracker, and Deeper Gemini AI Integration",
+          "summary": "At its 'Made by Google '26' event, Google announced the launch of its Pixel 11 smartphone lineup, a new Bluetooth tracking device to rival Apple's AirTag, and extensive new Gemini AI capabilities. Additionally, Google's Quick Share utility is receiving a 'tap-to-share' mode to facilitate seamless file and contact exchanges.",
+          "why_it_matters": "Google is aggressively coupling its consumer hardware with advanced, native AI capabilities to build a highly competitive ecosystem. These updates represent an effort to solidify Android's market position against Apple's hardware and intelligence features.",
+          "category": "Technology",
+          "why_selected": [
+            "Highlights Google's flagships and its long-term hardware strategy.",
+            "Consolidates multiple major product and feature releases from a single high-profile tech event.",
+            "Showcases the growing ubiquity of generative AI in consumer mobile operating systems."
+          ],
+          "source_articles": [
+            {
+              "title": "Everything announced at Made by Google '26: Pixel 11, Pixel Watch 5, Pixel Tag, and tons of Gemini features",
+              "url": "https://techcrunch.com/2026/08/12/google-unveils-pixel-11-lineup-new-airtag-rival-and-gemini-features-at-made-by-google-2026/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/Portfolio-3-1.png?resize=1200,675"
+            },
+            {
+              "title": "Google's Quick Share adds a tap-to-share mode",
+              "url": "https://techcrunch.com/2026/08/12/googles-quick-share-adds-a-tap-to-share-mode/",
+              "source": "TechCrunch"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/08/Portfolio-3-1.png?resize=1200,675",
+          "isRead": false
+        },
+        {
+          "id": "5ae3ed36-99ba-4aa1-8ebf-aee0629415f9",
+          "briefing_id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+          "rank": 2,
+          "priority": "IMPORTANT",
+          "headline": "Generative AI Valuations Skyrocket as Thrive Raises $2B and Cognition Targets $40B",
+          "summary": "The enterprise AI sector continues to see massive capital allocation as Thrive Holdings raised $2 billion at a $12 billion valuation from key global investors. Concurrently, AI software development startup Cognition is reportedly negotiating a new round of funding at a $40 billion valuation, while software-building platform Lovable secured a $13.3 billion valuation.",
+          "why_it_matters": "Despite lingering debates about near-term commercial ROI in artificial intelligence, mega-cap investment firms are doubling down on developer productivity and enterprise orchestration platforms.",
+          "category": "Startups",
+          "why_selected": [
+            "Represents a highly significant trend of multi-billion dollar startup valuations.",
+            "Highlights the massive capital inflows coming from major global investment groups.",
+            "Illustrates that developer-focused and enterprise-level AI tools remain highly prioritized by VCs."
+          ],
+          "source_articles": [
+            {
+              "title": "AI coding startup Cognition reportedly already in talks to raise at $40B valuation",
+              "url": "https://techcrunch.com/2026/08/12/ai-coding-startup-cognition-reportedly-already-in-talks-to-raise-at-40b-valuation/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/05/Scott-wu-headshot-e1780070238342.png?resize=1200,1004"
+            },
+            {
+              "title": "OpenAI-backed Thrive Holdings raises $2B to bring AI to the enterprise",
+              "url": "https://techcrunch.com/2026/08/12/openai-backed-thrive-holdings-raises-2b-to-bring-ai-to-the-enterprise/",
+              "source": "TechCrunch"
+            },
+            {
+              "title": "Lovable confirms new $13.3B valuation, raises another $400M",
+              "url": "https://techcrunch.com/2026/08/12/lovable-confirms-new-13-3b-valuation-raises-another-400m/",
+              "source": "TechCrunch"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/05/Scott-wu-headshot-e1780070238342.png?resize=1200,1004",
+          "isRead": false
+        },
+        {
+          "id": "db6e893e-c239-4176-9652-2ac6b00e49dc",
+          "briefing_id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+          "rank": 3,
+          "priority": "IMPORTANT",
+          "headline": "Amazon to Train AI on Twitch Content by Default, Reigniting Creator Compensation Debate",
+          "summary": "Amazon has implemented an automatic opt-in policy to use content from Twitch streamers to train its proprietary AI models. Twitch Chief Product Officer Mike Minton defended the decision publicly, stating that users would not voluntarily sign up under an opt-in framework.",
+          "why_it_matters": "The 'opt-out' approach taken by tech giants continues to frustrate online creators. This decision highlights the friction between platform ecosystems looking to build valuable AI models and the gig workers who generate the underlying training data.",
+          "category": "Technology",
+          "why_selected": [
+            "Speaks to the crucial, ongoing debate over AI data scraping and content licensing.",
+            "Exposes corporate strategies regarding user data consent policies.",
+            "Directly impacts the financial and operational dynamics of the massive creator economy."
+          ],
+          "source_articles": [
+            {
+              "title": "Amazon will train on Twitch streamers' content by default, unless they opt out",
+              "url": "https://techcrunch.com/2026/08/12/amazon-will-train-on-twitch-streamers-content-by-default-unless-they-opt-out/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2024/03/twitch-reflection.jpg?resize=1200,799"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2024/03/twitch-reflection.jpg?resize=1200,799",
+          "isRead": false
+        },
+        {
+          "id": "4576bc7a-4f77-435c-882b-9b58dc3f0632",
+          "briefing_id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+          "rank": 4,
+          "priority": "IMPORTANT",
+          "headline": "Security Researcher Publishes Windows Zero-Day Vulnerability Defying Microsoft Legal Threats",
+          "summary": "A security researcher known as Nightmare Eclipse has publically disclosed a new, unpatched zero-day vulnerability affecting Microsoft Windows. The release occurred shortly after Microsoft threatened the researcher with legal action to suppress the discovery.",
+          "why_it_matters": "The incident highlights the growing legal and operational chasm between major software companies and the independent cybersecurity community. Corporate attempts to suppress disclosures with legal actions often trigger public releases that leave users temporarily exposed.",
+          "category": "Technology",
+          "why_selected": [
+            "Focuses on critical system vulnerabilities in the world's most popular desktop operating system.",
+            "Sheds light on the legal and ethical tensions between tech giants and security researchers.",
+            "Highlights the risk of unpatched vulnerabilities actively circulating online."
+          ],
+          "source_articles": [
+            {
+              "title": "After Microsoft threatened legal action, a security researcher publishes a new Windows zero-day bug",
+              "url": "https://techcrunch.com/2026/08/12/after-microsoft-threatened-legal-action-a-security-researcher-publishes-a-new-windows-zero-day-bug/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2022/06/moshed-windows-11.jpg?resize=1200,752"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2022/06/moshed-windows-11.jpg?resize=1200,752",
+          "isRead": false
+        },
+        {
+          "id": "930d4358-e136-4bbc-91a3-90ea0af93e66",
+          "briefing_id": "c1b5862a-20a3-4254-b384-4d9ea8ed8b7f",
+          "rank": 5,
+          "priority": "IMPORTANT",
+          "headline": "Form Energy Secures $750M to Scale Long-Duration Iron-Air Batteries for Grid Scale Use",
+          "summary": "Cleantech startup Form Energy has closed $750 million in new funding to expand production of its multi-day iron-air batteries. The capital injection comes as the startup secures prominent anchor clients like Google and computing infrastructure provider Crusoe.",
+          "why_it_matters": "With AI data centers causing a dramatic rise in energy consumption, scaling cheap, long-duration energy storage is essential. Form Energy's technology addresses the critical grid-reliability challenges associated with renewable energy.",
+          "category": "Startups",
+          "why_selected": [
+            "Highlights a massive investment in vital hardware infrastructure designed for the energy grid.",
+            "Involves major tech-backed clients like Google and Crusoe looking to power their data infrastructure.",
+            "Underscores the rising prominence of cleantech startups in support of AI energy needs."
+          ],
+          "source_articles": [
+            {
+              "title": "Form Energy raises $750M to build more 100-hour batteries for the grid",
+              "url": "https://techcrunch.com/2026/08/12/form-energy-raises-750m-to-build-more-100-hour-batteries-for-the-grid/",
+              "source": "TechCrunch",
+              "image_url": "https://techcrunch.com/wp-content/uploads/2026/02/FF1-container-1.jpg?resize=1200,783"
+            }
+          ],
+          "image_url": "https://techcrunch.com/wp-content/uploads/2026/02/FF1-container-1.jpg?resize=1200,783",
+          "isRead": false
+        }
+      ],
+      "scanned_count": 60,
+      "cluster_count": 24,
+      "selected_story_count": 5,
+      "target_read_time_seconds": 131
     }
   ],
   "preferences": {
-    "categories": [
-      "AI & ML",
-      "Startups & VC",
-      "Biotech",
-      "Fintech",
-      "Green Tech"
+    "topics": [
+      "technology"
     ],
-    "frequency": "hourly",
-    "custom_feeds": [
-      "https://techcrunch.com/feed/",
-      "https://news.ycombinator.com/rss",
-      "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
-    ]
+    "briefing_frequency_hours": 6
   },
   "feedbacks": [
     {
@@ -556,5 +1393,15 @@
       "message": "Gemini synthesis failed: fetch failed. Handing graceful fallback using heuristic compiler.",
       "type": "error"
     }
-  ]
+  ],
+  "user_story_states": {
+    "1b5d79b2-6a91-4656-9d95-b3d84011d224": [
+      "f2091035-2e4a-446e-9005-b0e850105853",
+      "b241694b-9e16-4e37-92f1-acd107c7c6a1",
+      "e54687ec-525a-48f8-95b3-7e73a0575c89",
+      "17247ab1-cbc0-4917-b42c-b4855c55f446",
+      "58230972-40b4-449c-ad0b-7aba3e775ec8",
+      "a6def872-9a55-4f67-b504-4f2076d04eb2"
+    ]
+  }
 }

@@ -39,7 +39,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "TechCrunch",
     content: "OpenAI has officially launched its next-generation frontier model, GPT-5 OmniPro. Moving beyond mere next-token prediction, GPT-5 incorporates a reinforcement-learning-guided planning grid that computes multi-path searches before responding, enabling complex tool executions and self-correction. Early benchmark reports indicate dramatic gains in engineering, chemistry, coding, and systemic logic. Pricing will stay identical to existing models.",
     category: "AI & ML",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "YC pre-seed startup raises $12M for real-time edge AI chip compiling on silicon",
@@ -47,7 +48,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "Hacker News",
     content: "An stealth-mode startup from the latest Y Combinator batch has announced a $12M pre-seed round led by Founders Fund. The company claims it has designed an open-source hardware compilers system that translates PyTorch neural weights directly into gate array designs on customized microchips, dropping compute latencies in handheld edge robots by 80x compared to cloud server inferencing.",
     category: "Startups & VC",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "Venture capitalist report warns of structural 'compute deficit' in early SaaS investments",
@@ -55,7 +57,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "VentureBeat",
     content: "A detailed intelligence brief published by Andreessen Horowitz has detailed a growing venture capital wall in AI software. The premium report claims that seed SaaS companies are depleting 70% of their operational checks on raw token costs. The analysis encourages startup founders to transition to localized models or open-weights execution to control high margins before starting deep-tech scaleup cycles.",
     category: "Startups & VC",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "TSMC Breaks Ground on 1.4nm Silicon Fab in Germany",
@@ -63,7 +66,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "Hacker News",
     content: "TSMC has officially started foundations for its highly modern semiconductor foundry in Saxony, Germany. The site will target the production of sub-2nm chip channels (specifically 1.4nm nodes) by late 2027. Backed by heavy governmental subsidies, the project aims to stabilize European supply grids for military sensors, autonomous automobile processors, and industrial robotics processors.",
     category: "Hardware",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "CRISPR Therapeutics achieves 94% success rate in trial targeting high cholesterol genetics",
@@ -71,7 +75,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "TechCrunch",
     content: "CRISPR-based genetic therapeutics reported monumental phase-2 clinical results today. Their main gene-editing injection, which permanently edits the PCSK9 gene in liver tissues to lower systemic cholesterol, has demonstrated a persistent 94% reduction in LDL counts across 120 adult candidates. No serious secondary safety boundaries were encountered in the six-month study.",
     category: "Biotech",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "European Central Bank rolls out Digital Euro developer api specification",
@@ -79,7 +84,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "VentureBeat",
     content: "The ECB published full OpenAPI developer documentation for the upcoming Central Bank Digital Currency (CBDC) pilot. The SDK details account-to-account programmable escrows, instant settlements, offline visual wallets, and structural fraud isolation frameworks. The move is intended to modernize local retail payments across the shared market.",
     category: "Fintech",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "Sweden opens the world's first permanent wireless EV charging highway",
@@ -87,7 +93,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "TechCrunch",
     content: "Sweden has finalized a 12-mile stretch of wireless dynamic induction lanes along the E20 high-speed transport corridor. Under-road inductive coils feed current to receivers on trucks and passenger electric vehicles moving at regular transit speeds, reducing on-board battery weight requirements by up to 55% for long-haul logistics fleets.",
     category: "Green Tech",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "A16z Leads $50M Round into Decentralized Compute Protocol for De-PIN Nodes",
@@ -95,7 +102,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "Hacker News",
     content: "A decentralized physical infrastructure network (DePIN) has raised a massive Series A. The project pools under-utilized localized workstations, gaming setups, and desktop units globally to run decentralized fine-tuning workloads for minor LLMs, compensating node operators in native stablecoin tokens.",
     category: "Startups & VC",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "FDA approves first fully autonomous AI diagnosis system for general practitioner clinics",
@@ -103,7 +111,8 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "VentureBeat",
     content: "The FDA has granted clearance to an autonomous screening diagnostic system. The machine evaluates non-invasive multi-spectral camera scans of skin and retinal fields, flagging pre-clinical vascular issues and melanoma indicators directly, without requiring secondary human review before sending specialists referrals.",
     category: "Biotech",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80"
   },
   {
     title: "Solid-State Battery Pioneer Clears 10,000 Cycle Longevity Testing",
@@ -111,9 +120,175 @@ const SAMPLE_PRESETS: Omit<Article, "id">[] = [
     source: "TechCrunch",
     content: "An energy research startup announced its sulfide-based solid-state battery cells have finished 10,000 continuous charge-discharge loops with less than 2.5% composite material capacity loss. The breakthrough suggests batteries for electric aircraft and heavy transit could outlive typical airframe lifespans, eliminating secondary thermal disposal hazards.",
     category: "Green Tech",
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    image_url: "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1200&q=80"
   }
 ];
+
+// URL Validator and Normalizer
+export function resolveAndValidateImageUrl(rawUrl: string, baseUrl: string): string | null {
+  if (!rawUrl || typeof rawUrl !== "string") return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed.startsWith("data:") || trimmed.startsWith("javascript:")) return null;
+
+  let fullUrl = trimmed;
+  if (fullUrl.startsWith("//")) {
+    fullUrl = "https:" + fullUrl;
+  } else if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+    try {
+      fullUrl = new URL(fullUrl, baseUrl).href;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  try {
+    const parsed = new URL(fullUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (!parsed.hostname || !parsed.hostname.includes(".")) return null;
+
+    const lower = parsed.href.toLowerCase();
+    if (lower.includes("1x1") || lower.includes("pixel.gif") || lower.includes("feedburner") || lower.includes("statcounter")) {
+      return null;
+    }
+
+    return parsed.href;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Extract image from RSS XML tags (Priority 1)
+function extractRssImage(itemXml: string, linkUrl: string): string | null {
+  // 1. Check enclosure, media:content, media:thumbnail
+  const mediaMatch = itemXml.match(/<(?:media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
+  if (mediaMatch && mediaMatch[1]) {
+    const validated = resolveAndValidateImageUrl(mediaMatch[1], linkUrl);
+    if (validated) return validated;
+  }
+
+  // 2. Check <img src="..."> inside description, summary, content:encoded, content
+  const imgMatch = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgMatch && imgMatch[1]) {
+    const validated = resolveAndValidateImageUrl(imgMatch[1], linkUrl);
+    if (validated) return validated;
+  }
+
+  return null;
+}
+
+// In-memory cache to prevent duplicate HTTP requests for identical article URLs
+const resolvedArticleImageCache = new Map<string, string | null>();
+
+// Server-side Image Metadata Resolver (Priority 2: og:image, Priority 3: twitter:image)
+export async function resolveArticleImage(articleUrl: string): Promise<{
+  rssImage: string | null;
+  ogImage: string | null;
+  twitterImage: string | null;
+  finalImage: string | null;
+}> {
+  if (!articleUrl || !articleUrl.startsWith("http")) {
+    return { rssImage: null, ogImage: null, twitterImage: null, finalImage: null };
+  }
+
+  if (resolvedArticleImageCache.has(articleUrl)) {
+    const cached = resolvedArticleImageCache.get(articleUrl) || null;
+    return { rssImage: null, ogImage: cached, twitterImage: null, finalImage: cached };
+  }
+
+  let ogImage: string | null = null;
+  let twitterImage: string | null = null;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s strict timeout
+
+    const res = await fetch(articleUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      let html = "";
+      const reader = res.body?.getReader();
+      if (reader) {
+        let bytesRead = 0;
+        while (bytesRead < 120000) { // Limit chunk to ~120KB to avoid full page download
+          const { done, value } = await reader.read();
+          if (done || !value) break;
+          html += new TextDecoder().decode(value, { stream: true });
+          bytesRead += value.length;
+          if (html.includes("</head>") || html.includes("<body")) break;
+        }
+      } else {
+        html = await res.text();
+      }
+
+      // Priority 2: Open Graph Image
+      const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+                      html.match(/<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']og:image["']/i);
+
+      if (ogMatch && ogMatch[1]) {
+        ogImage = resolveAndValidateImageUrl(ogMatch[1], articleUrl);
+      }
+
+      // Priority 3: Twitter/X Card Image
+      if (!ogImage) {
+        const twMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+                        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i) ||
+                        html.match(/<meta[^>]+property=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+                        html.match(/<meta[^>]+name=["']twitter:image:src["'][^>]+content=["']([^"']+)["']/i);
+
+        if (twMatch && twMatch[1]) {
+          twitterImage = resolveAndValidateImageUrl(twMatch[1], articleUrl);
+        }
+      }
+    }
+  } catch (_) {
+    // Non-blocking error handling — fallback gracefully without failing
+  }
+
+  const finalImage = ogImage || twitterImage || null;
+  resolvedArticleImageCache.set(articleUrl, finalImage);
+
+  return { rssImage: null, ogImage, twitterImage, finalImage };
+}
+
+// Helper to batch-enrich articles with missing images
+export async function enrichArticlesWithImages(articles: Omit<Article, "id">[]): Promise<Omit<Article, "id">[]> {
+  console.info("[NewsService] Running Image Resolution Fallback Pipeline V2...");
+
+  const missing = articles.filter(a => !a.image_url && a.url && a.url.startsWith("http"));
+
+  if (missing.length === 0) {
+    console.info("[NewsService] All articles already have valid images or preset URLs.");
+    return articles;
+  }
+
+  const batchSize = 8;
+  for (let i = 0; i < missing.length; i += batchSize) {
+    const batch = missing.slice(i, i + batchSize);
+    await Promise.allSettled(
+      batch.map(async (art) => {
+        const res = await resolveArticleImage(art.url);
+        if (res.finalImage) {
+          art.image_url = res.finalImage;
+        }
+      })
+    );
+  }
+
+  const resolvedCount = articles.filter(a => Boolean(a.image_url)).length;
+  console.info(`[NewsService] Image Resolution Pipeline completed: ${resolvedCount}/${articles.length} articles have images.`);
+
+  return articles;
+}
 
 // Simple RSS parser helper using regex matching on CDATA and plain XML blocks
 function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[] {
@@ -128,6 +303,10 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
       .replace(/&amp;/g, "&")
       .replace(/&quot;/g, '"')
       .replace(/&apos;/g, "'")
+      .replace(/&#8217;/g, "'")
+      .replace(/&#8216;/g, "'")
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
       .replace(/<[^>]+>/g, "") // remove nested HTML tags
       .trim();
   };
@@ -135,23 +314,59 @@ function parseRSS(xmlText: string, defaultSource: string): Omit<Article, "id">[]
   for (const item of items) {
     try {
       const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || item.match(/<title>([\s\S]*?)<\/title>/);
-      const linkMatch = item.match(/<link[^>]*>([\s\S]*?)<\/link>/) || item.match(/<link href="([^"]*)"/);
+
+      let linkUrl = "";
+      const linkTagMatch = item.match(/<link[^>]*>([\s\S]*?)<\/link>/);
+      const linkAttrMatch = item.match(/<link[^>]+href=["']([^"']+)["']/i);
+      const guidMatch = item.match(/<guid[^>]*isPermaLink=["']true["'][^>]*>([\s\S]*?)<\/guid>/i);
+
+      if (linkTagMatch && linkTagMatch[1] && linkTagMatch[1].trim().startsWith("http")) {
+        linkUrl = linkTagMatch[1].trim();
+      } else if (linkAttrMatch && linkAttrMatch[1] && linkAttrMatch[1].trim().startsWith("http")) {
+        linkUrl = linkAttrMatch[1].trim();
+      } else if (guidMatch && guidMatch[1] && guidMatch[1].trim().startsWith("http")) {
+        linkUrl = guidMatch[1].trim();
+      }
+
       const descMatch = item.match(/<description>([\s\S]*?)<\/description>/) || item.match(/<summary>([\s\S]*?)<\/summary>/) || item.match(/<content[^>]*>([\s\S]*?)<\/content>/);
       const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || item.match(/<updated>([\s\S]*?)<\/updated>/) || item.match(/<published>([\s\S]*?)<\/published>/);
 
-      if (titleMatch && titleMatch[1]) {
+      // Priority 1: RSS Image extraction
+      const rssImageUrl = extractRssImage(item, linkUrl);
+
+      if (titleMatch && titleMatch[1] && linkUrl) {
         const title = cleanXML(titleMatch[1]);
-        const url = (linkMatch && linkMatch[1]) ? linkMatch[1] : `https://news.ycombinator.com`;
+
+        let effectiveSource = defaultSource;
+        try {
+          const parsedUrl = new URL(linkUrl);
+          const host = parsedUrl.hostname.replace(/^www\./, "");
+          if (defaultSource === "Hacker News") {
+            if (host === "news.ycombinator.com") {
+              effectiveSource = "Hacker News";
+            } else if (host.includes("techcrunch.com")) {
+              effectiveSource = "TechCrunch";
+            } else if (host.includes("venturebeat.com")) {
+              effectiveSource = "VentureBeat";
+            } else if (host.includes("blog.google")) {
+              effectiveSource = "Google Blog";
+            } else {
+              effectiveSource = host;
+            }
+          }
+        } catch (_) {}
+
         const content = (descMatch && descMatch[1]) ? cleanXML(descMatch[1]) : "No full summary available.";
         const dateStr = (dateMatch && dateMatch[1]) ? cleanXML(dateMatch[1]) : new Date().toISOString();
 
         articles.push({
           title,
-          url: url.trim(),
-          content: content.substring(0, 1000), // restrict chunk size
-          source: defaultSource,
+          url: linkUrl,
+          content: content.substring(0, 1000),
+          source: effectiveSource,
           category: "General",
-          published_at: new Date(dateStr).toString() !== "Invalid Date" ? new Date(dateStr).toISOString() : new Date().toISOString()
+          published_at: new Date(dateStr).toString() !== "Invalid Date" ? new Date(dateStr).toISOString() : new Date().toISOString(),
+          image_url: rssImageUrl || undefined
         });
       }
     } catch (e) {
@@ -232,6 +447,9 @@ export class NewsService {
     // Inject active simulated presets to guarantee feed density and up-to-date high-fidelity articles
     const remainingPresets = SAMPLE_PRESETS.filter(p => !articles.some(a => a.title.toLowerCase() === p.title.toLowerCase()));
     articles.push(...remainingPresets);
+
+    // Enrich missing images via OpenGraph (Priority 2) & Twitter Card (Priority 3) fallback
+    await enrichArticlesWithImages(articles);
 
     console.info(`[NewsService] Aggregation completed. Total of ${articles.length} stories parsed and ready for AI processing.`);
     return articles;
@@ -335,6 +553,34 @@ Return your response strictly matching the schema.
 
         const category = card.category === "Startups" ? "Startups" : "Technology";
 
+        const sourceArticles = Array.isArray(card.source_articles) ? card.source_articles : [];
+        const firstSource = sourceArticles[0];
+        const matchedArt = articles.find(a => 
+          (firstSource?.url && a.url === firstSource.url) ||
+          (a.title && card.headline && a.title.toLowerCase().includes(card.headline.toLowerCase().slice(0, 15)))
+        ) || articles[index % (articles.length || 1)];
+
+        const imageUrl = card.image_url || firstSource?.image_url || matchedArt?.image_url;
+
+        const normalizedSourceArticles = sourceArticles.map((sa: any, sIdx: number) => {
+          if (sIdx === 0) {
+            return {
+              ...sa,
+              image_url: sa.image_url || imageUrl || undefined
+            };
+          }
+          return sa;
+        });
+
+        if (normalizedSourceArticles.length === 0 && matchedArt) {
+          normalizedSourceArticles.push({
+            title: matchedArt.title,
+            url: matchedArt.url,
+            source: matchedArt.source,
+            image_url: matchedArt.image_url || imageUrl || undefined
+          });
+        }
+
         return {
           id: randomUUID(),
           briefing_id: briefingId,
@@ -347,14 +593,15 @@ Return your response strictly matching the schema.
           why_selected: Array.isArray(card.why_selected) && card.why_selected.length > 0 
             ? card.why_selected 
             : [`Matches your ${category} interest`, "High industry impact", "Covered by multiple trusted sources"],
-          source_articles: Array.isArray(card.source_articles) ? card.source_articles : [],
+          source_articles: normalizedSourceArticles,
+          image_url: imageUrl,
           isRead: false
         };
       });
 
       const briefingCards = processedCards.slice(0, 5);
-      const scannedCount = 127;
-      const clusterCount = 42;
+      const scannedCount = articles.length > 0 ? articles.length : 10;
+      const clusterCount = Math.max(1, Math.round(scannedCount * 0.4));
 
       let totalWords = 0;
       briefingCards.forEach(card => {
@@ -408,20 +655,29 @@ Return your response strictly matching the schema.
             "High industry impact",
             `Covered by ${art.source || "trusted source"}`
           ],
-          source_articles: [{ title: art.title, url: art.url, source: art.source }],
+          source_articles: [{ title: art.title, url: art.url, source: art.source, image_url: art.image_url }],
+          image_url: art.image_url,
           isRead: false
         };
       });
 
-      const targetReadTimeSeconds = 58;
+      const scannedCount = sourcePool.length;
+      const clusterCount = Math.max(1, Math.round(scannedCount * 0.4));
+      let totalWords = 0;
+      processedCards.forEach(card => {
+        totalWords += (card.headline?.split(/\s+/).length || 0) + 
+                      (card.summary?.split(/\s+/).length || 0) + 
+                      (card.why_it_matters?.split(/\s+/).length || 0);
+      });
+      const targetReadTimeSeconds = Math.max(30, Math.round(totalWords / 3.3) || 58);
 
       const newBriefing: Briefing = {
         id: briefingId,
         generated_at: new Date().toISOString(),
         is_automated: false,
         cards: processedCards,
-        scanned_count: 127,
-        cluster_count: 42,
+        scanned_count: scannedCount,
+        cluster_count: clusterCount,
         selected_story_count: processedCards.length,
         target_read_time_seconds: targetReadTimeSeconds
       };

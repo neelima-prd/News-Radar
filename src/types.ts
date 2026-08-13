@@ -11,6 +11,7 @@ export interface Article {
   content: string;
   category: string;
   published_at: string;
+  image_url?: string;
 }
 
 export interface BriefingCard {
@@ -23,7 +24,8 @@ export interface BriefingCard {
   why_it_matters: string;
   category: string; // 'Technology', 'Startups'
   why_selected?: string[]; // transparency points: e.g. ["Matches your Technology interest", "High industry impact", "Covered by multiple trusted sources"]
-  source_articles: { title: string; url: string; source: string }[];
+  source_articles: { title: string; url: string; source: string; image_url?: string }[];
+  image_url?: string;
   isRead?: boolean;
 }
 

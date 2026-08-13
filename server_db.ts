@@ -152,9 +152,10 @@ const seedBriefings = (): Briefing[] => {
             "Covered by 4 trusted tech publications"
           ],
           source_articles: [
-            { title: "OpenAI releases Realtime API for multi-modal audio applications", url: "https://techcrunch.com", source: "TechCrunch" },
-            { title: "Show HN: Building voice bots with OpenAI's new audio endpoint", url: "https://news.ycombinator.com", source: "Hacker News" }
+            { title: "OpenAI releases Realtime API for multi-modal audio applications", url: "https://techcrunch.com/2024/10/openai-realtime-api", source: "TechCrunch" },
+            { title: "Show HN: Building voice bots with OpenAI's new audio endpoint", url: "https://news.ycombinator.com/item?id=4171234", source: "Hacker News" }
           ],
+          image_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
           isRead: false
         },
         {
@@ -172,8 +173,9 @@ const seedBriefings = (): Briefing[] => {
             "Covered by YC and TechCrunch"
           ],
           source_articles: [
-            { title: "YC Launches new directory tool to pair founders by skill embeddings", url: "https://techcrunch.com", source: "TechCrunch" }
+            { title: "YC Launches new directory tool to pair founders by skill embeddings", url: "https://techcrunch.com/2024/09/yc-cofounder-matching", source: "TechCrunch" }
           ],
+          image_url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
           isRead: false
         },
         {
@@ -191,8 +193,9 @@ const seedBriefings = (): Briefing[] => {
             "Covered by VentureBeat and TechCrunch"
           ],
           source_articles: [
-            { title: "Anthropic brings interactive Artifacts canvas to enterprise teams", url: "https://venturebeat.com", source: "VentureBeat" }
+            { title: "Anthropic brings interactive Artifacts canvas to enterprise teams", url: "https://venturebeat.com/ai/anthropic-claude-artifacts-teams", source: "VentureBeat" }
           ],
+          image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80",
           isRead: false
         },
         {
@@ -210,8 +213,9 @@ const seedBriefings = (): Briefing[] => {
             "Covered by major financial & tech outlets"
           ],
           source_articles: [
-            { title: "TSMC breaks ground on sub-2nm fab in Europe", url: "https://news.ycombinator.com", source: "Hacker News" }
+            { title: "TSMC breaks ground on sub-2nm fab in Europe", url: "https://news.ycombinator.com/item?id=4189001", source: "Hacker News" }
           ],
+          image_url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
           isRead: false
         },
         {
@@ -229,8 +233,9 @@ const seedBriefings = (): Briefing[] => {
             "Covered by TechCrunch and Hacker News"
           ],
           source_articles: [
-            { title: "YC edge compiler startup raises $12M pre-seed", url: "https://techcrunch.com", source: "TechCrunch" }
+            { title: "YC edge compiler startup raises $12M pre-seed", url: "https://techcrunch.com/2024/08/edge-compiler-12m", source: "TechCrunch" }
           ],
+          image_url: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80",
           isRead: false
         }
       ]
@@ -279,7 +284,16 @@ export class DBManager {
       try {
         const { data, error } = await supabase
           .from("briefings")
-          .select("*, briefing_items(*)")
+          .select(`
+            *,
+            briefing_items (
+              *,
+              articles (
+                *,
+                sources (*)
+              )
+            )
+          `)
           .order("generated_at", { ascending: false });
 
         if (error) {
@@ -289,19 +303,52 @@ export class DBManager {
             const items = Array.isArray(b.briefing_items) ? b.briefing_items : [];
             items.sort((a: any, b: any) => (a.rank || 0) - (b.rank || 0));
 
-            const cards: BriefingCard[] = items.map((item: any) => ({
-              id: item.id,
-              briefing_id: item.briefing_id,
-              rank: item.rank,
-              priority: item.priority || "IMPORTANT",
-              headline: item.headline,
-              summary: item.summary,
-              why_it_matters: item.why_it_matters,
-              category: item.category,
-              why_selected: safeParseArray(item.why_selected),
-              source_articles: safeParseArray(item.source_articles || []),
-              isRead: false
-            }));
+            const cards: BriefingCard[] = items.map((item: any) => {
+              const art = item.articles;
+              const src = art?.sources;
+
+              let sourceArticles: Array<{ title: string; url: string; source: string; image_url?: string }> = [];
+
+              if (art && art.url) {
+                sourceArticles = [{
+                  title: art.title || item.headline,
+                  url: art.url,
+                  source: src?.name || art.source || "News Source",
+                  image_url: art.image_url || undefined
+                }];
+              } else {
+                const rawSources = safeParseArray(item.source_articles || []);
+                if (rawSources.length > 0) {
+                  sourceArticles = rawSources.map((s: any) => (typeof s === "string" ? { title: item.headline, url: s, source: item.category || "Technology" } : s));
+                }
+              }
+
+              if (sourceArticles.length === 0) {
+                sourceArticles = [{
+                  title: item.headline || "Coverage Article",
+                  url: "https://techcrunch.com",
+                  source: item.category || "Technology"
+                }];
+              }
+
+              const firstArticle = sourceArticles[0];
+              const imageUrl = item.image_url || art?.image_url || (typeof firstArticle === 'object' && firstArticle && 'image_url' in firstArticle ? (firstArticle as any).image_url : undefined);
+
+              return {
+                id: item.id,
+                briefing_id: item.briefing_id,
+                rank: item.rank,
+                priority: item.priority || "IMPORTANT",
+                headline: item.headline,
+                summary: item.summary,
+                why_it_matters: item.why_it_matters,
+                category: item.category,
+                why_selected: safeParseArray(item.why_selected),
+                source_articles: sourceArticles,
+                image_url: imageUrl,
+                isRead: false
+              };
+            });
 
             return {
               id: b.id,
@@ -349,19 +396,93 @@ export class DBManager {
           handleSupabaseError("addBriefing header", bError);
         }
 
-        // 2. Insert briefing items
+        // 2. Ensure sources and articles exist in relational tables
         if (briefing.cards && briefing.cards.length > 0) {
-          const itemsToInsert = briefing.cards.map((card, idx) => ({
-            id: isValidUUID(card.id) ? card.id : randomUUID(),
-            briefing_id: briefingId,
-            rank: card.rank || (idx + 1),
-            priority: card.priority || "IMPORTANT",
-            category: card.category || "Technology",
-            headline: card.headline,
-            summary: card.summary,
-            why_it_matters: card.why_it_matters,
-            why_selected: card.why_selected || []
-          }));
+          const itemsToInsert: any[] = [];
+
+          for (const card of briefing.cards) {
+            const cardId = isValidUUID(card.id) ? card.id : randomUUID();
+            const primarySource = card.source_articles?.[0];
+            let articleId: string | null = null;
+
+            if (primarySource && primarySource.url) {
+              const sourceName = primarySource.source || "News Source";
+              let baseUrl = "https://techcrunch.com";
+              let feedUrl = "https://techcrunch.com/feed/";
+
+              try {
+                const parsed = new URL(primarySource.url);
+                baseUrl = `${parsed.protocol}//${parsed.hostname}`;
+                feedUrl = `${baseUrl}/rss`;
+              } catch (_) {}
+
+              // Find or create source row
+              let sourceId: string | null = null;
+              const { data: existingSources } = await supabase
+                .from("sources")
+                .select("id")
+                .eq("name", sourceName)
+                .limit(1);
+
+              if (existingSources && existingSources.length > 0) {
+                sourceId = existingSources[0].id;
+              } else {
+                sourceId = randomUUID();
+                try {
+                  await supabase.from("sources").insert([{
+                    id: sourceId,
+                    name: sourceName,
+                    base_url: baseUrl,
+                    feed_url: feedUrl
+                  }]);
+                } catch (_) {}
+              }
+
+              // Find or create article row
+              const { data: existingArticles } = await supabase
+                .from("articles")
+                .select("id, image_url")
+                .eq("url", primarySource.url)
+                .limit(1);
+
+              const newImage = card.image_url || primarySource.image_url;
+
+              if (existingArticles && existingArticles.length > 0) {
+                articleId = existingArticles[0].id;
+                if (newImage && !existingArticles[0].image_url) {
+                  try {
+                    await supabase.from("articles").update({ image_url: newImage }).eq("id", articleId);
+                  } catch (_) {}
+                }
+              } else {
+                articleId = randomUUID();
+                try {
+                  await supabase.from("articles").insert([{
+                    id: articleId,
+                    source_id: sourceId,
+                    title: primarySource.title || card.headline,
+                    url: primarySource.url,
+                    image_url: newImage || null,
+                    content: card.summary || null,
+                    published_at: new Date().toISOString()
+                  }]);
+                } catch (_) {}
+              }
+            }
+
+            itemsToInsert.push({
+              id: cardId,
+              briefing_id: briefingId,
+              rank: card.rank || 1,
+              priority: card.priority || "IMPORTANT",
+              category: card.category || "Technology",
+              headline: card.headline,
+              summary: card.summary,
+              why_it_matters: card.why_it_matters,
+              why_selected: card.why_selected || [],
+              source_article_id: articleId
+            });
+          }
 
           const { error: biError } = await supabase
             .from("briefing_items")

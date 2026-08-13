@@ -29,6 +29,7 @@ export function InsightCard({
   isActive?: boolean;
 }) {
   const [showSources, setShowSources] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const getPriorityBadgeClass = (priority: string) => {
     if (priority === "TOP STORY") {
@@ -56,6 +57,19 @@ export function InsightCard({
     ? card.why_selected
     : defaultWhySelected;
 
+  const validSources = Array.isArray(card.source_articles) && card.source_articles.length > 0
+    ? card.source_articles
+    : [{ title: card.headline, url: "https://news.ycombinator.com", source: card.category || "Tech Feed" }];
+
+  const sourcesCount = validSources.length;
+  const sourceNamesStr = validSources
+    .map(s => s.source)
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(" · ");
+
+  const imageUrl = card.image_url || validSources[0]?.image_url;
+
   return (
     <motion.div
       layout
@@ -63,7 +77,7 @@ export function InsightCard({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      className={`rounded-2xl transition-all duration-300 border flex flex-col ${
+      className={`rounded-2xl transition-all duration-300 border flex flex-col overflow-hidden ${
         isRead
           ? theme === "dark"
             ? "bg-[#0f1422]/60 border-slate-800/50 opacity-80"
@@ -106,6 +120,26 @@ export function InsightCard({
           </span>
         )}
       </div>
+
+      {/* Prominent News Article Image */}
+      {imageUrl && !imageError ? (
+        <div className="relative w-full aspect-[16/9] overflow-hidden bg-slate-900 border-b border-slate-800/60">
+          <img
+            src={imageUrl}
+            alt={card.headline}
+            onError={() => setImageError(true)}
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+        </div>
+      ) : (
+        <div className={`w-full h-2.5 bg-gradient-to-r ${
+          card.priority === "TOP STORY" 
+            ? "from-amber-500/30 via-sky-500/20 to-transparent" 
+            : "from-sky-500/20 via-slate-700/20 to-transparent"
+        }`} />
+      )}
 
       {/* Main Content body */}
       <div className={`flex-1 flex flex-col ${isTopStory ? "p-6 md:p-7" : "p-5 md:p-6"}`}>
@@ -165,12 +199,17 @@ export function InsightCard({
         }`}>
           <button
             onClick={() => setShowSources(!showSources)}
-            className={`flex items-center gap-1.5 text-xs font-bold tracking-wide transition ${
+            className={`flex items-center gap-1.5 text-xs font-bold tracking-wide transition text-left cursor-pointer ${
               theme === "dark" ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            <ChevronRight size={14} className={`transform transition-transform text-gray-400 ${showSources ? "rotate-90 text-blue-500" : ""}`} />
-            <span>Coverage Sources ({card.source_articles?.length || 1})</span>
+            <ChevronRight size={14} className={`transform transition-transform text-gray-400 shrink-0 ${showSources ? "rotate-90 text-blue-500" : ""}`} />
+            <span className="line-clamp-1">
+              Coverage Sources ({sourcesCount})
+              {sourceNamesStr && (
+                <span className="font-normal opacity-75 ml-1">· {sourceNamesStr}</span>
+              )}
+            </span>
           </button>
 
           <AnimatePresence>
@@ -182,13 +221,14 @@ export function InsightCard({
                 className="overflow-hidden mt-3"
               >
                 <div className={`rounded-xl p-3.5 space-y-2 text-xs ${
-                  theme === "dark" ? "bg-slate-900/60" : "bg-gray-50"
+                  theme === "dark" ? "bg-slate-900/60 border border-slate-800/50" : "bg-gray-50 border border-gray-150"
                 }`}>
-                  {card.source_articles?.map((art, idx) => (
+                  {validSources.map((art, idx) => (
                     <a
                       key={idx}
-                      href={art.url}
+                      href={art.url || "#"}
                       target="_blank"
+                      rel="noopener noreferrer"
                       referrerPolicy="no-referrer"
                       className={`flex items-start gap-2.5 text-xs border-b pb-2 last:pb-0 last:border-0 transition ${
                         theme === "dark" 
@@ -200,7 +240,7 @@ export function InsightCard({
                       <div className="flex-1 min-w-0">
                         <span className={`font-semibold ${
                           theme === "dark" ? "text-sky-400" : "text-blue-700"
-                        }`}>[{art.source}]</span>{" "}
+                        }`}>[{art.source || "News Source"}]</span>{" "}
                         <span className="hover:underline">{art.title}</span>
                       </div>
                       <ExternalLink size={10} className="mt-0.5 text-gray-400 shrink-0" />

@@ -1,0 +1,103 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from "react";
+import { Check, ArrowRight, RotateCcw } from "lucide-react";
+import { motion } from "motion/react";
+
+interface BriefingCompletionViewProps {
+  nextBriefingTime: string;
+  onBrowseArchive: () => void;
+  onReviewAgain: () => void;
+  theme?: "dark" | "light";
+}
+
+export function BriefingCompletionView({
+  nextBriefingTime,
+  onBrowseArchive,
+  onReviewAgain,
+  theme = "dark"
+}: BriefingCompletionViewProps) {
+  const isDark = theme === "dark";
+
+  return (
+    <motion.div
+      initial={{ scale: 0.98, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`border rounded-2xl p-8 md:p-10 text-center space-y-6 shadow-xl max-w-xl mx-auto my-4 transition-colors ${
+        isDark
+          ? "bg-gradient-to-br from-[#10192e] to-[#0d1323] border-emerald-500/30 text-white"
+          : "bg-gradient-to-br from-emerald-50/40 to-white border-emerald-200 text-gray-900 shadow-sm"
+      }`}
+    >
+      <div className="flex flex-col items-center">
+        <div
+          className={`h-14 w-14 rounded-full flex items-center justify-center mb-4 ${
+            isDark
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+              : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+          }`}
+        >
+          <Check size={28} className="stroke-[3]" />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-black tracking-tight">
+          Briefing Complete
+        </h2>
+        <p
+          className={`text-sm md:text-base font-medium mt-1.5 ${
+            isDark ? "text-slate-300" : "text-gray-600"
+          }`}
+        >
+          You&apos;re all caught up.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-center">
+        <div
+          className={`inline-flex flex-col items-center px-6 py-3 rounded-2xl border ${
+            isDark
+              ? "bg-[#0b0f1a]/80 border-slate-800"
+              : "bg-gray-50 border-gray-200"
+          }`}
+        >
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+            Next Briefing
+          </span>
+          <span
+            className={`text-lg font-extrabold mt-0.5 ${
+              isDark ? "text-cyan-400" : "text-blue-600"
+            }`}
+          >
+            {nextBriefingTime}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onBrowseArchive}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer"
+        >
+          <span>Browse Archive</span>
+          <ArrowRight size={14} />
+        </button>
+
+        <button
+          type="button"
+          onClick={onReviewAgain}
+          className={`px-5 py-3 rounded-xl text-xs font-bold transition border cursor-pointer flex items-center gap-2 ${
+            isDark
+              ? "bg-slate-800/80 border-slate-700 hover:bg-slate-700 text-slate-200"
+              : "bg-white border-gray-200 hover:bg-gray-50 text-gray-800 shadow-sm"
+          }`}
+        >
+          <RotateCcw size={14} />
+          <span>Review Again</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
