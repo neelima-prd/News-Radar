@@ -383,7 +383,8 @@ export class NewsService {
     const feedsToScrape = customFeeds.length > 0 ? customFeeds : [
       "https://techcrunch.com/feed/",
       "https://news.ycombinator.com/rss",
-      "https://search.cnbc.com/rs/search/combinedfeed.xml?show=1"
+      "https://feeds.arstechnica.com/arstechnica/index",
+      "https://www.theverge.com/rss/index.xml"
     ];
 
     const fetchPromises = feedsToScrape.map(async (url) => {
@@ -392,6 +393,8 @@ export class NewsService {
         if (url.includes("techcrunch")) sourceName = "TechCrunch";
         else if (url.includes("news.ycombinator")) sourceName = "Hacker News";
         else if (url.includes("venturebeat")) sourceName = "VentureBeat";
+        else if (url.includes("arstechnica")) sourceName = "Ars Technica";
+        else if (url.includes("theverge")) sourceName = "The Verge";
         else if (url.includes("cnbc")) sourceName = "CNBC Business";
         else {
           try {
@@ -494,7 +497,7 @@ Return your response strictly matching the schema.
     try {
       const client = getGeminiClient();
       const result = await client.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.7-flash",
         contents: promptText,
         config: {
           responseMimeType: "application/json",

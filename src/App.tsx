@@ -430,6 +430,29 @@ export default function App() {
     return nextTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   };
 
+  const handleReviewAgain = async () => {
+    const currentCardIds = cards.map((c) => c.id);
+    setReadStoryIds((prev) => prev.filter((id) => !currentCardIds.includes(id)));
+    if (cards[0]) {
+      setActiveCardId(cards[0].id);
+    }
+
+    try {
+      for (const card of cards) {
+        fetch("/api/story_state", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-email": session?.user?.id || "default"
+          },
+          body: JSON.stringify({ card_id: card.id, is_read: false })
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Failed to reset story state for review:", e);
+    }
+  };
+
   const activeCardIndex = cards.findIndex((c) => c.id === activeCardId);
   const activeCard = cards[activeCardIndex] || cards[0] || null;
 
@@ -548,9 +571,7 @@ export default function App() {
                 <BriefingCompletionView
                   nextBriefingTime={getFormattedNextBriefingTime()}
                   onBrowseArchive={() => setActiveTab("archives")}
-                  onReviewAgain={() => {
-                    if (cards[0]) setActiveCardId(cards[0].id);
-                  }}
+                  onReviewAgain={handleReviewAgain}
                   theme={theme}
                 />
               ) : (
