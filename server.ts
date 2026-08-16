@@ -5,6 +5,7 @@
 
 import express from "express";
 import path from "path";
+import crypto from "crypto";
 import { DBManager, DatabaseService } from "./server_db.js";
 import { NewsService } from "./news_service.js";
 import { NotificationService, configureVapid } from "./notification_service.js";
@@ -119,10 +120,39 @@ app.post("/api/notifications/test", async (req, res) => {
 // Invoked every hour by an external scheduler (e.g. cron-job.org, GitHub Actions, EasyCron)
 // Protected via Authorization: Bearer <CRON_SECRET>
 const handleBriefingDispatcher = async (req: express.Request, res: express.Response) => {
-  // Verify authorization if CRON_SECRET is configured
-  const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+
+  // 1. Fail closed if CRON_SECRET is missing or empty in server environment
+  if (!cronSecret || cronSecret.trim() === "") {
+    console.error("[Dispatcher] CRON_SECRET is not configured in server environment.");
+    return res.status(500).json({ error: "Cron authentication is not configured." });
+  }
+
+  // 2. Reject if Authorization header is missing
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Missing Authorization header." });
+  }
+
+  // 3. Reject if format is not Bearer token
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Invalid Authorization format. Expected Bearer token." });
+  }
+
+  const providedToken = authHeader.slice(7).trim();
+
+  // 4. Secure constant-time comparison against expected CRON_SECRET
+  try {
+    const expectedBuffer = Buffer.from(cronSecret);
+    const providedBuffer = Buffer.from(providedToken);
+
+    if (
+      expectedBuffer.length !== providedBuffer.length ||
+      !crypto.timingSafeEqual(expectedBuffer, providedBuffer)
+    ) {
+      return res.status(401).json({ error: "Unauthorized cron execution." });
+    }
+  } catch {
     return res.status(401).json({ error: "Unauthorized cron execution." });
   }
 
