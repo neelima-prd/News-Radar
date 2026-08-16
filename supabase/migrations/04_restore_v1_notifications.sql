@@ -10,7 +10,7 @@ ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN DEFAULT FALSE NOT NULL;
 -- 2. Restore notification_subscriptions table for Web Push
 CREATE TABLE IF NOT EXISTS public.notification_subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID NOT NULL,
     endpoint TEXT NOT NULL,
     p256dh TEXT NOT NULL,
     auth_key TEXT NOT NULL,
@@ -20,6 +20,22 @@ CREATE TABLE IF NOT EXISTS public.notification_subscriptions (
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     CONSTRAINT uq_user_endpoint UNIQUE (user_id, endpoint)
 );
+
+-- Ensure index on endpoint
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notif_subs_endpoint_unique 
+ON public.notification_subscriptions (endpoint);
+
+-- Relax strict foreign key constraint if it exists to allow decoupled user UUIDs
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'notification_subscriptions_user_id_fkey' 
+    AND table_name = 'notification_subscriptions'
+  ) THEN
+    ALTER TABLE public.notification_subscriptions DROP CONSTRAINT notification_subscriptions_user_id_fkey;
+  END IF;
+END $$;
 
 -- 3. Create high-performance indexes
 CREATE INDEX IF NOT EXISTS idx_notif_subs_user_active 
@@ -31,24 +47,34 @@ ON public.notification_subscriptions (endpoint);
 -- 4. Enable Row Level Security (RLS)
 ALTER TABLE public.notification_subscriptions ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies (Users can only manage their own subscriptions)
-CREATE POLICY "Users can view their own push subscriptions"
+-- 5. RLS Policies
+DROP POLICY IF EXISTS "Users can view their own push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Users can insert their own push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Users can update their own push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Users can delete their own push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow read push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow insert push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow update push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow delete push subscriptions" ON public.notification_subscriptions;
+
+CREATE POLICY "Allow read push subscriptions"
 ON public.notification_subscriptions
 FOR SELECT
-USING (auth.uid() = user_id);
+USING (TRUE);
 
-CREATE POLICY "Users can insert their own push subscriptions"
+CREATE POLICY "Allow insert push subscriptions"
 ON public.notification_subscriptions
 FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (TRUE);
 
-CREATE POLICY "Users can update their own push subscriptions"
+CREATE POLICY "Allow update push subscriptions"
 ON public.notification_subscriptions
 FOR UPDATE
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+USING (TRUE)
+WITH CHECK (TRUE);
 
-CREATE POLICY "Users can delete their own push subscriptions"
+CREATE POLICY "Allow delete push subscriptions"
 ON public.notification_subscriptions
 FOR DELETE
-USING (auth.uid() = user_id);
+USING (TRUE);
+

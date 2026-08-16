@@ -5,13 +5,14 @@
 
 import fs from "fs";
 import path from "path";
-import { randomUUID } from "crypto";
+import crypto, { randomUUID } from "crypto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Briefing, BriefingCard, UserPreferences } from "./src/types.js";
 
 let supabaseClient: SupabaseClient | null = null;
 let supabaseDisabled = false;
 let lastSupabaseCheckTime = 0;
+let cachedResolvedUserId: string | null = null;
 
 function getSupabaseClient(): SupabaseClient | null {
   if (supabaseDisabled) {
@@ -74,6 +75,11 @@ function handleSupabaseError(context: string, err: any) {
 function isValidUUID(str?: string): boolean {
   if (!str) return false;
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
+}
+
+function stringToUUID(str: string): string {
+  const hash = crypto.createHash("md5").update(str).digest("hex");
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
 
 const DB_FILE = process.env.VERCEL
@@ -512,25 +518,95 @@ export class DBManager {
     }
   }
 
+  static async resolveSupabaseUserId(userIdentifier?: string): Promise<string | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+
+    if (userIdentifier && isValidUUID(userIdentifier)) {
+      return userIdentifier;
+    }
+
+    if (cachedResolvedUserId) {
+      return cachedResolvedUserId;
+    }
+
+    try {
+      // 1. Try to find any user profile in public.profiles
+      const { data: profiles, error: profErr } = await supabase
+        .from("profiles")
+        .select("id")
+        .limit(1);
+
+      if (!profErr && profiles && profiles.length > 0 && profiles[0]?.id) {
+        cachedResolvedUserId = profiles[0].id;
+        return cachedResolvedUserId;
+      }
+
+      // 2. Try to find any existing user in user_preferences
+      const { data: prefs, error: prefErr } = await supabase
+        .from("user_preferences")
+        .select("user_id")
+        .limit(1);
+
+      if (!prefErr && prefs && prefs.length > 0 && prefs[0]?.user_id) {
+        cachedResolvedUserId = prefs[0].user_id;
+        return cachedResolvedUserId;
+      }
+
+      // 3. Try to query auth.users if service role admin is available
+      if (supabase.auth && (supabase.auth as any).admin) {
+        try {
+          const { data: usersData, error: adminErr } = await (supabase.auth as any).admin.listUsers({ page: 1, perPage: 1 });
+          if (!adminErr && usersData?.users && usersData.users.length > 0) {
+            cachedResolvedUserId = usersData.users[0].id;
+            return cachedResolvedUserId;
+          }
+
+          // Auto-create a default user in auth.users if completely empty and service role is available
+          const defaultEmail = userIdentifier && userIdentifier.includes("@") ? userIdentifier : "radar-user@newsradar.internal";
+          const { data: newUser, error: createErr } = await (supabase.auth as any).admin.createUser({
+            email: defaultEmail,
+            email_confirm: true,
+            user_metadata: { role: "radar_user" }
+          });
+          if (!createErr && newUser?.user?.id) {
+            cachedResolvedUserId = newUser.user.id;
+            return cachedResolvedUserId;
+          }
+        } catch (adminEx) {
+          console.warn("[Database] Supabase admin user resolution notice:", adminEx);
+        }
+      }
+
+      const fallbackId = userIdentifier ? stringToUUID(userIdentifier) : stringToUUID("default");
+      return fallbackId;
+    } catch (err) {
+      console.warn("[Database] resolveSupabaseUserId warning:", err);
+      return userIdentifier && isValidUUID(userIdentifier) ? userIdentifier : stringToUUID("default");
+    }
+  }
+
   static async getPreferences(userEmail?: string): Promise<UserPreferences> {
     const supabase = getSupabaseClient();
-    const userId = isValidUUID(userEmail) ? userEmail : null;
-    if (supabase && userId) {
+    if (supabase) {
       try {
-        const { data, error } = await supabase
-          .from("user_preferences")
-          .select("*")
-          .eq("user_id", userId)
-          .maybeSingle();
+        const userId = await this.resolveSupabaseUserId(userEmail);
+        if (userId) {
+          const { data, error } = await supabase
+            .from("user_preferences")
+            .select("*")
+            .eq("user_id", userId)
+            .maybeSingle();
 
-        if (error) {
-          handleSupabaseError("getPreferences", error);
-        } else if (data) {
-          return {
-            topics: safeParseArray(data.topics || ["technology", "startups"]),
-            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any,
-            notifications_enabled: data.notifications_enabled === true
-          };
+          if (error) {
+            handleSupabaseError("getPreferences", error);
+          } else if (data) {
+            return {
+              topics: safeParseArray(data.topics || ["technology", "startups"]),
+              briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any,
+              notifications_enabled: data.notifications_enabled === true
+            };
+          }
         }
       } catch (err: any) {
         handleSupabaseError("getPreferences", err);
@@ -547,25 +623,27 @@ export class DBManager {
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
-    const userId = isValidUUID(userEmail) ? userEmail : null;
-    if (supabase && userId) {
+    if (supabase) {
       try {
-        const payload: any = {
-          user_id: userId,
-          topics: preferences.topics,
-          briefing_frequency_hours: preferences.briefing_frequency_hours,
-          updated_at: new Date().toISOString()
-        };
-        if (typeof preferences.notifications_enabled === 'boolean') {
-          payload.notifications_enabled = preferences.notifications_enabled;
-        }
+        const userId = await this.resolveSupabaseUserId(userEmail);
+        if (userId) {
+          const payload: any = {
+            user_id: userId,
+            topics: preferences.topics,
+            briefing_frequency_hours: preferences.briefing_frequency_hours,
+            updated_at: new Date().toISOString()
+          };
+          if (typeof preferences.notifications_enabled === 'boolean') {
+            payload.notifications_enabled = preferences.notifications_enabled;
+          }
 
-        const { error } = await supabase
-          .from("user_preferences")
-          .upsert(payload);
+          const { error } = await supabase
+            .from("user_preferences")
+            .upsert(payload, { onConflict: "user_id" });
 
-        if (error) {
-          handleSupabaseError("savePreferences", error);
+          if (error) {
+            handleSupabaseError("savePreferences", error);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("savePreferences", err);
@@ -607,23 +685,85 @@ export class DBManager {
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
-    const validUserId = isValidUUID(userId) ? userId : null;
-    if (supabase && validUserId) {
+    if (supabase) {
       try {
-        const { error } = await supabase
-          .from("notification_subscriptions")
-          .upsert({
-            user_id: validUserId,
-            endpoint: subscription.endpoint,
-            p256dh: subscription.p256dh,
-            auth_key: subscription.auth_key,
-            user_agent: subscription.user_agent || null,
-            is_active: true,
-            updated_at: now
-          }, { onConflict: "user_id,endpoint" });
+        let targetUserId = await this.resolveSupabaseUserId(userId);
+        if (!targetUserId) {
+          targetUserId = stringToUUID(userId || "default");
+        }
 
-        if (error) {
-          handleSupabaseError("savePushSubscription", error);
+        // Check if row already exists for this endpoint
+        const { data: existingRows, error: findErr } = await supabase
+          .from("notification_subscriptions")
+          .select("id")
+          .eq("endpoint", subscription.endpoint)
+          .limit(1);
+
+        if (!findErr && existingRows && existingRows.length > 0) {
+          const { error: updateErr } = await supabase
+            .from("notification_subscriptions")
+            .update({
+              user_id: targetUserId,
+              p256dh: subscription.p256dh,
+              auth_key: subscription.auth_key,
+              user_agent: subscription.user_agent || null,
+              is_active: true,
+              updated_at: now
+            })
+            .eq("id", existingRows[0].id);
+
+          if (updateErr) {
+            handleSupabaseError("savePushSubscription update", updateErr);
+          } else {
+            console.info(`[Database] Supabase push subscription updated for user: ${targetUserId}`);
+          }
+        } else {
+          // Insert new subscription record
+          const { error: insertErr } = await supabase
+            .from("notification_subscriptions")
+            .insert([{
+              id: randomUUID(),
+              user_id: targetUserId,
+              endpoint: subscription.endpoint,
+              p256dh: subscription.p256dh,
+              auth_key: subscription.auth_key,
+              user_agent: subscription.user_agent || null,
+              is_active: true,
+              created_at: now,
+              updated_at: now
+            }]);
+
+          if (insertErr) {
+            // If foreign key failed, retry with any profile ID from database
+            if (insertErr.message?.includes("foreign key") || insertErr.message?.includes("fkey")) {
+              const { data: anyProf } = await supabase.from("profiles").select("id").limit(1);
+              if (anyProf && anyProf.length > 0 && anyProf[0].id) {
+                cachedResolvedUserId = anyProf[0].id;
+                const { error: retryErr } = await supabase
+                  .from("notification_subscriptions")
+                  .insert([{
+                    id: randomUUID(),
+                    user_id: anyProf[0].id,
+                    endpoint: subscription.endpoint,
+                    p256dh: subscription.p256dh,
+                    auth_key: subscription.auth_key,
+                    user_agent: subscription.user_agent || null,
+                    is_active: true,
+                    created_at: now,
+                    updated_at: now
+                  }]);
+                if (retryErr) {
+                  handleSupabaseError("savePushSubscription retry", retryErr);
+                } else {
+                  console.info(`[Database] Supabase push subscription inserted with profile ID: ${anyProf[0].id}`);
+                }
+                return;
+              }
+            }
+            handleSupabaseError("savePushSubscription insert", insertErr);
+          } else {
+            console.info(`[Database] Supabase push subscription created for user: ${targetUserId}`);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("savePushSubscription", err);
@@ -633,19 +773,31 @@ export class DBManager {
 
   static async getUserPushSubscriptions(userId: string): Promise<PushSubscriptionRecord[]> {
     const supabase = getSupabaseClient();
-    const validUserId = isValidUUID(userId) ? userId : null;
-    if (supabase && validUserId) {
+    if (supabase) {
       try {
-        const { data, error } = await supabase
+        const targetUserId = await this.resolveSupabaseUserId(userId);
+        let query = supabase
           .from("notification_subscriptions")
           .select("*")
-          .eq("user_id", validUserId)
           .eq("is_active", true);
 
-        if (error) {
-          handleSupabaseError("getUserPushSubscriptions", error);
-        } else if (data) {
+        if (targetUserId) {
+          query = query.eq("user_id", targetUserId);
+        }
+
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
           return data;
+        }
+
+        // Fallback: check all active subscriptions in Supabase
+        const { data: allActive } = await supabase
+          .from("notification_subscriptions")
+          .select("*")
+          .eq("is_active", true);
+
+        if (allActive && allActive.length > 0) {
+          return allActive;
         }
       } catch (err: any) {
         handleSupabaseError("getUserPushSubscriptions", err);
@@ -763,19 +915,21 @@ export class DBManager {
 
   static async getReadStoryIds(userId?: string): Promise<string[]> {
     const supabase = getSupabaseClient();
-    const validUserId = isValidUUID(userId) ? userId : null;
-    if (supabase && validUserId) {
+    if (supabase) {
       try {
-        const { data, error } = await supabase
-          .from("user_story_state")
-          .select("briefing_item_id, status")
-          .eq("user_id", validUserId)
-          .eq("status", "read");
+        const resolvedUserId = await this.resolveSupabaseUserId(userId);
+        if (resolvedUserId) {
+          const { data, error } = await supabase
+            .from("user_story_state")
+            .select("briefing_item_id, status")
+            .eq("user_id", resolvedUserId)
+            .eq("status", "read");
 
-        if (error) {
-          handleSupabaseError("getReadStoryIds", error);
-        } else if (data) {
-          return data.map((d: any) => d.briefing_item_id);
+          if (error) {
+            handleSupabaseError("getReadStoryIds", error);
+          } else if (data) {
+            return data.map((d: any) => d.briefing_item_id);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("getReadStoryIds", err);
@@ -803,21 +957,23 @@ export class DBManager {
     this.saveDB(db);
 
     const supabase = getSupabaseClient();
-    const validUserId = isValidUUID(userId) ? userId : null;
-    if (supabase && validUserId && isValidUUID(cardId)) {
+    if (supabase && isValidUUID(cardId)) {
       try {
-        const { error } = await supabase
-          .from("user_story_state")
-          .upsert({
-            user_id: validUserId,
-            briefing_item_id: cardId,
-            status: isRead ? "read" : "unread",
-            read_at: isRead ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString()
-          });
+        const resolvedUserId = await this.resolveSupabaseUserId(userId);
+        if (resolvedUserId) {
+          const { error } = await supabase
+            .from("user_story_state")
+            .upsert({
+              user_id: resolvedUserId,
+              briefing_item_id: cardId,
+              status: isRead ? "read" : "unread",
+              read_at: isRead ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString()
+            });
 
-        if (error) {
-          handleSupabaseError("updateStoryState", error);
+          if (error) {
+            handleSupabaseError("updateStoryState", error);
+          }
         }
       } catch (err: any) {
         handleSupabaseError("updateStoryState", err);

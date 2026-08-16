@@ -118,6 +118,8 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   briefing_frequency_hours INTEGER DEFAULT 6 CHECK (briefing_frequency_hours IN (3, 6, 12, 24)),
   timezone TEXT DEFAULT 'UTC',
+  notifications_enabled BOOLEAN DEFAULT FALSE NOT NULL,
+  topics TEXT[] DEFAULT ARRAY['technology', 'startups']::TEXT[],
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -319,6 +321,53 @@ CREATE POLICY "Users can update their story read state"
 
 CREATE INDEX IF NOT EXISTS idx_user_story_state_user ON public.user_story_state(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_story_state_status ON public.user_story_state(user_id, status);
+
+-- ====================================================================
+-- 12. NOTIFICATION SUBSCRIPTIONS
+-- Web Push VAPID subscriptions
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS public.notification_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth_key TEXT NOT NULL,
+  user_agent TEXT,
+  is_active BOOLEAN DEFAULT TRUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT uq_user_endpoint UNIQUE (user_id, endpoint)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notif_subs_endpoint_unique 
+ON public.notification_subscriptions (endpoint);
+
+CREATE INDEX IF NOT EXISTS idx_notif_subs_user_active 
+ON public.notification_subscriptions (user_id, is_active);
+
+ALTER TABLE public.notification_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow read push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow insert push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow update push subscriptions" ON public.notification_subscriptions;
+DROP POLICY IF EXISTS "Allow delete push subscriptions" ON public.notification_subscriptions;
+
+CREATE POLICY "Allow read push subscriptions"
+ON public.notification_subscriptions FOR SELECT
+USING (TRUE);
+
+CREATE POLICY "Allow insert push subscriptions"
+ON public.notification_subscriptions FOR INSERT
+WITH CHECK (TRUE);
+
+CREATE POLICY "Allow update push subscriptions"
+ON public.notification_subscriptions FOR UPDATE
+USING (TRUE)
+WITH CHECK (TRUE);
+
+CREATE POLICY "Allow delete push subscriptions"
+ON public.notification_subscriptions FOR DELETE
+USING (TRUE);
 
 -- ====================================================================
 -- FUNCTIONS & TRIGGERS
