@@ -172,6 +172,10 @@ export default function App() {
   const [activeCardId, setActiveCardId] = useState<string>("");
 
   useEffect(() => {
+    document.title = "News Radar — AI Intelligence Briefing";
+  }, []);
+
+  useEffect(() => {
     try {
       localStorage.setItem("news_radar_read_story_ids", JSON.stringify(readStoryIds));
     } catch (_) {}
