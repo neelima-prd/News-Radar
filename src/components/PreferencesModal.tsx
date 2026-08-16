@@ -36,7 +36,6 @@ export function PreferencesModal({
   const [permissionState, setPermissionState] = useState<NotificationPermission>("default");
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isUpdatingPush, setIsUpdatingPush] = useState(false);
-  const [testStatus, setTestStatus] = useState<string | null>(null);
 
   // Synchronize browser notification & push subscription states
   useEffect(() => {
@@ -116,7 +115,6 @@ export function PreferencesModal({
   const handleToggleNotifications = async () => {
     if (!pushSupported || isBlocked) return;
     setIsUpdatingPush(true);
-    setTestStatus(null);
 
     if (isEnabled) {
       // Disable Notifications
@@ -151,28 +149,6 @@ export function PreferencesModal({
         setIsUpdatingPush(false);
       }
     }
-  };
-
-  const handleSendTestNotification = async () => {
-    setTestStatus("Sending...");
-    try {
-      const res = await fetch("/api/notifications/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": userEmail
-        }
-      });
-      const data = await res.json();
-      if (data.ok && data.sentCount > 0) {
-        setTestStatus("Test alert sent to your desktop!");
-      } else {
-        setTestStatus("Subscribed, but alert failed to dispatch (check VAPID keys).");
-      }
-    } catch {
-      setTestStatus("Error triggering test alert.");
-    }
-    setTimeout(() => setTestStatus(null), 4500);
   };
 
   return (
@@ -301,20 +277,6 @@ export function PreferencesModal({
               )}
             </div>
           </div>
-
-          {/* Test Notification Action Link when Enabled */}
-          {isEnabled && (
-            <div className="flex items-center justify-between pt-1 text-xs px-1">
-              <span className="text-slate-400 text-[11px]">Verify desktop alert delivery:</span>
-              <button
-                type="button"
-                onClick={handleSendTestNotification}
-                className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
-              >
-                {testStatus || "Send Test Notification"}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Topics Selection */}
