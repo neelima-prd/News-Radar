@@ -4,43 +4,66 @@
 - Node.js 18+
 - Google Gemini API Key (`GEMINI_API_KEY`)
 - Supabase Project (URL and Anon Key)
+- Web Push VAPID Keypair (generated via `npx web-push generate-vapid-keys`)
 
-## Database Setup & Migration Manual Workflow (Supabase)
+---
 
-For fresh deployments, run `/supabase/schema.sql` directly in your Supabase SQL Editor.
+## 1. Generating VAPID Keys for Desktop Notifications
 
-For existing Supabase deployments, follow these exact manual steps in the Supabase SQL Editor:
-
-### Step 1: Pre-Migration Safety Check
-Execute `supabase/pre_migration_check.sql` in the Supabase SQL Editor.
-
-### Step 2: Review Inspection Output
-Review the output to confirm:
-- `user_preferences.notifications_enabled` column status.
-- Deferred tables (`feedback`, `notification_subscriptions`, `ingestion_runs`, `ai_processing_runs`, `analytics_events`, `live_logs`) status and estimated row counts.
-- Confirm `SAFE_TO_DROP` is `YES` and no core V1 tables depend on deferred tables.
-
-### Step 3: Run Migration 03
-If no unexpected data or dependencies exist, manually execute:
-`supabase/migrations/03_finalize_v1_11_table_schema.sql`
-
-### Step 4: Run Verification Audit
-Execute `supabase/verify_v1.sql` in the Supabase SQL Editor.
-
-### Step 5: Confirm Results
-Verify that the audit output reports:
-`CORE TABLES: 11/11 PASS`
-and all deferred tables report `ABSENT`.
-
-## Environment Configuration
-Set the following variables in your environment or hosting platform:
-```env
-GEMINI_API_KEY=your_gemini_api_key
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+Run the following command to generate a new pair of VAPID keys:
+```bash
+npx web-push generate-vapid-keys
 ```
 
-## Running the Application
+Add the generated keys to your `.env` and Vercel Environment Variables:
+```env
+VITE_VAPID_PUBLIC_KEY=BL9x...
+VAPID_PRIVATE_KEY=3k...
+VAPID_SUBJECT=mailto:admin@yourdomain.com
+CRON_SECRET=your-secure-cron-token
+```
+
+---
+
+## 2. Database Setup & Migration (Supabase)
+
+### For Fresh Deployments:
+Run `/supabase/schema.sql` directly in your Supabase SQL Editor.
+
+### For Existing Supabase Deployments:
+Execute the notification restore migration in the Supabase SQL Editor:
+`supabase/migrations/04_restore_v1_notifications.sql`
+
+This migration creates:
+- `notification_subscriptions` table with RLS policies
+- `user_preferences.notifications_enabled` column
+
+---
+
+## 3. Vercel Cron Configuration
+
+Vercel Cron is automatically configured via `vercel.json` to trigger every hour:
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/briefing-dispatcher",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+```
+
+When triggered:
+1. The cron endpoint verifies the `Authorization: Bearer <CRON_SECRET>` header.
+2. It queries all users whose `notifications_enabled = true` and whose last briefing is older than their configured `briefing_frequency_hours` (3, 6, 12, or 24 hours).
+3. For each due user, it generates a fresh intelligence briefing and delivers a desktop push notification via Web Push.
+4. Invalid/expired endpoints (HTTP 410 / 404) are automatically marked inactive in the database.
+
+---
+
+## 4. Running the Application
+
 ```bash
 npm install
 npm run build

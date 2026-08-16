@@ -2,9 +2,15 @@
   "version": 2,
   "functions": {
     "api/**/*.ts": {
-      "includeFiles": "server.ts,server_db.ts,news_service.ts,src/**"
+      "includeFiles": "server.ts,server_db.ts,news_service.ts,notification_service.ts,src/**"
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/briefing-dispatcher",
+      "schedule": "0 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

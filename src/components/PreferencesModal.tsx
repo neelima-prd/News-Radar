@@ -3,15 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
-import { Check, X, Settings } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Check, X, Settings, Bell, AlertCircle, RefreshCw } from "lucide-react";
 import { UserPreferences } from "../types";
 import { motion } from "motion/react";
+import {
+  isPushNotificationSupported,
+  getNotificationPermissionState,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications
+} from "../utils/push";
 
 interface PreferencesModalProps {
   preferences: UserPreferences;
   onSavePreferences: (updated: UserPreferences) => void;
   onClose: () => void;
+  userEmail?: string;
   theme?: "dark" | "light";
 }
 
@@ -19,9 +26,20 @@ export function PreferencesModal({
   preferences,
   onSavePreferences,
   onClose,
+  userEmail = "default",
   theme = "dark"
 }: PreferencesModalProps) {
   const isDark = theme === "dark";
+
+  const [pushSupported, setPushSupported] = useState(true);
+  const [permissionState, setPermissionState] = useState<NotificationPermission>("default");
+  const [isUpdatingPush, setIsUpdatingPush] = useState(false);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPushSupported(isPushNotificationSupported());
+    setPermissionState(getNotificationPermissionState());
+  }, []);
 
   const availableTopics = [
     { id: "technology", label: "Technology", active: true },
@@ -53,13 +71,63 @@ export function PreferencesModal({
     onSavePreferences(updated);
   };
 
+  const handleToggleNotifications = async () => {
+    if (!pushSupported) return;
+    setIsUpdatingPush(true);
+    setTestStatus(null);
+
+    const isCurrentlyEnabled = preferences.notifications_enabled && permissionState === "granted";
+
+    if (isCurrentlyEnabled) {
+      // Turn off
+      await unsubscribeFromPushNotifications(userEmail);
+      const updated = { ...preferences, notifications_enabled: false };
+      onSavePreferences(updated);
+      setIsUpdatingPush(false);
+    } else {
+      // Turn on / Request permission
+      const result = await subscribeToPushNotifications(userEmail);
+      setPermissionState(getNotificationPermissionState());
+
+      if (result.success) {
+        const updated = { ...preferences, notifications_enabled: true };
+        onSavePreferences(updated);
+      } else {
+        console.warn("[PreferencesModal] Notification subscription notice:", result.error);
+      }
+      setIsUpdatingPush(false);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    setTestStatus("Sending...");
+    try {
+      const res = await fetch("/api/notifications/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": userEmail
+        }
+      });
+      const data = await res.json();
+      if (data.ok && data.sentCount > 0) {
+        setTestStatus("Test alert sent!");
+      } else {
+        setTestStatus("Subscribed, but alert failed to dispatch (check VAPID keys).");
+      }
+    } catch {
+      setTestStatus("Error triggering test alert.");
+    }
+    setTimeout(() => setTestStatus(null), 4000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className={`w-full max-w-xl rounded-2xl border p-6 shadow-2xl space-y-6 ${
+        className={`w-full max-w-xl rounded-2xl border p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto ${
           isDark
             ? "bg-[#101622] border-slate-800 text-slate-100"
             : "bg-white border-gray-200 text-gray-900"
@@ -71,7 +139,7 @@ export function PreferencesModal({
             <div>
               <h3 className="font-bold text-base">Briefing Preferences</h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Customize topics and automated briefing intervals.
+                Customize topics, briefing intervals, and desktop notifications.
               </p>
             </div>
           </div>
@@ -84,8 +152,83 @@ export function PreferencesModal({
           </button>
         </div>
 
-        {/* Topics Selection */}
+        {/* Desktop Notifications Control */}
         <div className="space-y-3">
+          <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400">
+            Desktop Notifications
+          </h4>
+
+          <div
+            className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+              isDark ? "bg-[#0b0f1a] border-slate-800" : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Bell size={15} className={preferences.notifications_enabled ? "text-cyan-400" : "text-slate-400"} />
+                <span className="font-bold text-xs">Get notified when briefing is ready</span>
+                {preferences.notifications_enabled && permissionState === "granted" && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    ON
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Delivers an alert to your desktop when the automated briefing cycle completes.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {!pushSupported ? (
+                <div className="flex items-center gap-1 text-amber-400 text-xs font-semibold">
+                  <AlertCircle size={13} />
+                  <span>Unsupported</span>
+                </div>
+              ) : permissionState === "denied" ? (
+                <div className="text-right">
+                  <span className="text-[11px] font-bold text-red-400 block">Blocked by Browser</span>
+                  <span className="text-[9px] text-slate-400">Enable via address bar padlock</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleToggleNotifications}
+                  disabled={isUpdatingPush}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    preferences.notifications_enabled && permissionState === "granted"
+                      ? "bg-slate-700 hover:bg-slate-600 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {isUpdatingPush ? (
+                    <RefreshCw size={12} className="animate-spin" />
+                  ) : preferences.notifications_enabled && permissionState === "granted" ? (
+                    "Turn Off"
+                  ) : (
+                    "Enable"
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {preferences.notifications_enabled && permissionState === "granted" && (
+            <div className="flex items-center justify-between pt-1 text-xs">
+              <span className="text-slate-400 text-[11px]">Verify desktop alert delivery:</span>
+              <button
+                type="button"
+                onClick={handleSendTestNotification}
+                className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+              >
+                {testStatus || "Send Test Notification"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Topics Selection */}
+        <div className="space-y-3 pt-2 border-t border-slate-800/40">
           <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400">
             Topics You Follow
           </h4>

@@ -4,13 +4,15 @@
  */
 
 import React from "react";
-import { Check, ArrowRight, RotateCcw } from "lucide-react";
+import { Check, ArrowRight, RotateCcw, Bell } from "lucide-react";
 import { motion } from "motion/react";
 
 interface BriefingCompletionViewProps {
   nextBriefingTime: string;
   onBrowseArchive: () => void;
   onReviewAgain: () => void;
+  notificationsEnabled?: boolean;
+  onEnableNotifications?: () => void;
   theme?: "dark" | "light";
 }
 
@@ -18,6 +20,8 @@ export function BriefingCompletionView({
   nextBriefingTime,
   onBrowseArchive,
   onReviewAgain,
+  notificationsEnabled = false,
+  onEnableNotifications,
   theme = "dark"
 }: BriefingCompletionViewProps) {
   const isDark = theme === "dark";
@@ -54,7 +58,7 @@ export function BriefingCompletionView({
         </p>
       </div>
 
-      <div className="flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
         <div
           className={`inline-flex flex-col items-center px-6 py-3 rounded-2xl border ${
             isDark
@@ -73,6 +77,21 @@ export function BriefingCompletionView({
             {nextBriefingTime}
           </span>
         </div>
+
+        {!notificationsEnabled && onEnableNotifications && (
+          <button
+            type="button"
+            onClick={onEnableNotifications}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+              isDark
+                ? "bg-cyan-950/40 border-cyan-800/60 text-cyan-300 hover:bg-cyan-900/50"
+                : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            }`}
+          >
+            <Bell size={13} className="text-cyan-400 animate-pulse" />
+            <span>Notify me when next briefing arrives</span>
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-center gap-3 pt-2">

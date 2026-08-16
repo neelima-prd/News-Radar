@@ -13,6 +13,12 @@ import { ActiveStoryPanel } from "./components/ActiveStoryPanel";
 import { BriefingCompletionView } from "./components/BriefingCompletionView";
 import { ArchivesWorkspace } from "./components/ArchivesWorkspace";
 import { PreferencesModal } from "./components/PreferencesModal";
+import { NotificationPromptBanner } from "./components/NotificationPromptBanner";
+import {
+  isPushNotificationSupported,
+  getNotificationPermissionState,
+  subscribeToPushNotifications
+} from "./utils/push";
 
 export function RadarLogo({
   size = 32,
@@ -171,9 +177,53 @@ export default function App() {
   // Currently selected active story ID in queue
   const [activeCardId, setActiveCardId] = useState<string>("");
 
+  // Notification contextual prompt state
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
+
   useEffect(() => {
     document.title = "News Radar — AI Intelligence Briefing";
+
+    // Handle deep linking from push notification URL params (e.g. /?briefing_id=xxx)
+    const urlParams = new URLSearchParams(window.location.search);
+    const briefingParam = urlParams.get("briefing_id");
+    if (briefingParam) {
+      console.info(`[App] Deep link to briefing: ${briefingParam}`);
+    }
   }, []);
+
+  // Determine whether to show the contextual notification banner
+  useEffect(() => {
+    if (
+      isPushNotificationSupported() &&
+      getNotificationPermissionState() === "default" &&
+      !preferences.notifications_enabled
+    ) {
+      const dismissed = localStorage.getItem("news_radar_notif_banner_dismissed");
+      if (!dismissed) {
+        setShowNotificationPrompt(true);
+      }
+    } else {
+      setShowNotificationPrompt(false);
+    }
+  }, [preferences.notifications_enabled]);
+
+  const handleEnablePushFromPrompt = async () => {
+    setEnablingPush(true);
+    const userId = session?.user?.id || "default";
+    const result = await subscribeToPushNotifications(userId);
+    if (result.success) {
+      const updated = { ...preferences, notifications_enabled: true };
+      handleSavePreferences(updated);
+      setShowNotificationPrompt(false);
+    }
+    setEnablingPush(false);
+  };
+
+  const handleDismissPushPrompt = () => {
+    setShowNotificationPrompt(false);
+    localStorage.setItem("news_radar_notif_banner_dismissed", "true");
+  };
 
   useEffect(() => {
     try {
@@ -531,6 +581,16 @@ export default function App() {
           onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
         />
 
+        {/* CONTEXTUAL NOTIFICATION PROMPT BANNER */}
+        {showNotificationPrompt && (
+          <NotificationPromptBanner
+            onEnable={handleEnablePushFromPrompt}
+            onDismiss={handleDismissPushPrompt}
+            loading={enablingPush}
+            theme={theme}
+          />
+        )}
+
         {/* WORKSPACE BODY */}
         <main className="flex-1 overflow-y-auto">
           {radarError && (
@@ -576,6 +636,8 @@ export default function App() {
                   nextBriefingTime={getFormattedNextBriefingTime()}
                   onBrowseArchive={() => setActiveTab("archives")}
                   onReviewAgain={handleReviewAgain}
+                  notificationsEnabled={preferences.notifications_enabled}
+                  onEnableNotifications={handleEnablePushFromPrompt}
                   theme={theme}
                 />
               ) : (
@@ -628,6 +690,7 @@ export default function App() {
           preferences={preferences}
           onSavePreferences={handleSavePreferences}
           onClose={() => setShowPreferencesModal(false)}
+          userEmail={session?.user?.id || "default"}
           theme={theme}
         />
       )}

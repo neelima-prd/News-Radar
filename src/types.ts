@@ -43,4 +43,5 @@ export interface Briefing {
 export interface UserPreferences {
   topics: string[]; // e.g. ["technology", "startups"]
   briefing_frequency_hours: 3 | 6 | 12 | 24; // default 6
+  notifications_enabled?: boolean;
 }

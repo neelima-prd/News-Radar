@@ -80,15 +80,29 @@ const DB_FILE = process.env.VERCEL
   ? "/tmp/db.json"
   : path.join(process.cwd(), "db.json");
 
+export interface PushSubscriptionRecord {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  user_agent?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface DBStructure {
   briefings: Briefing[];
   preferences: UserPreferences;
   user_story_states?: Record<string, string[]>;
+  notification_subscriptions?: PushSubscriptionRecord[];
 }
 
 const DEFAULT_PREFS: UserPreferences = {
   topics: ["technology", "startups"],
-  briefing_frequency_hours: 6
+  briefing_frequency_hours: 6,
+  notifications_enabled: false
 };
 
 function safeParseArray(val: any): string[] {
@@ -514,7 +528,8 @@ export class DBManager {
         } else if (data) {
           return {
             topics: safeParseArray(data.topics || ["technology", "startups"]),
-            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any
+            briefing_frequency_hours: (Number(data.briefing_frequency_hours) || 6) as any,
+            notifications_enabled: data.notifications_enabled === true
           };
         }
       } catch (err: any) {
@@ -535,13 +550,18 @@ export class DBManager {
     const userId = isValidUUID(userEmail) ? userEmail : null;
     if (supabase && userId) {
       try {
+        const payload: any = {
+          user_id: userId,
+          briefing_frequency_hours: preferences.briefing_frequency_hours,
+          updated_at: new Date().toISOString()
+        };
+        if (typeof preferences.notifications_enabled === 'boolean') {
+          payload.notifications_enabled = preferences.notifications_enabled;
+        }
+
         const { error } = await supabase
           .from("user_preferences")
-          .upsert({
-            user_id: userId,
-            briefing_frequency_hours: preferences.briefing_frequency_hours,
-            updated_at: new Date().toISOString()
-          });
+          .upsert(payload);
 
         if (error) {
           handleSupabaseError("savePreferences", error);
@@ -550,6 +570,194 @@ export class DBManager {
         handleSupabaseError("savePreferences", err);
       }
     }
+  }
+
+  static async savePushSubscription(
+    userId: string,
+    subscription: { endpoint: string; p256dh: string; auth_key: string; user_agent?: string }
+  ): Promise<void> {
+    const db = this.loadDB();
+    if (!db.notification_subscriptions) {
+      db.notification_subscriptions = [];
+    }
+
+    const existingIdx = db.notification_subscriptions.findIndex(
+      s => s.user_id === userId && s.endpoint === subscription.endpoint
+    );
+
+    const now = new Date().toISOString();
+    const record: PushSubscriptionRecord = {
+      id: existingIdx >= 0 ? db.notification_subscriptions[existingIdx].id : randomUUID(),
+      user_id: userId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.p256dh,
+      auth_key: subscription.auth_key,
+      user_agent: subscription.user_agent,
+      is_active: true,
+      created_at: existingIdx >= 0 ? db.notification_subscriptions[existingIdx].created_at : now,
+      updated_at: now
+    };
+
+    if (existingIdx >= 0) {
+      db.notification_subscriptions[existingIdx] = record;
+    } else {
+      db.notification_subscriptions.push(record);
+    }
+    this.saveDB(db);
+
+    const supabase = getSupabaseClient();
+    const validUserId = isValidUUID(userId) ? userId : null;
+    if (supabase && validUserId) {
+      try {
+        const { error } = await supabase
+          .from("notification_subscriptions")
+          .upsert({
+            user_id: validUserId,
+            endpoint: subscription.endpoint,
+            p256dh: subscription.p256dh,
+            auth_key: subscription.auth_key,
+            user_agent: subscription.user_agent || null,
+            is_active: true,
+            updated_at: now
+          }, { onConflict: "user_id,endpoint" });
+
+        if (error) {
+          handleSupabaseError("savePushSubscription", error);
+        }
+      } catch (err: any) {
+        handleSupabaseError("savePushSubscription", err);
+      }
+    }
+  }
+
+  static async getUserPushSubscriptions(userId: string): Promise<PushSubscriptionRecord[]> {
+    const supabase = getSupabaseClient();
+    const validUserId = isValidUUID(userId) ? userId : null;
+    if (supabase && validUserId) {
+      try {
+        const { data, error } = await supabase
+          .from("notification_subscriptions")
+          .select("*")
+          .eq("user_id", validUserId)
+          .eq("is_active", true);
+
+        if (error) {
+          handleSupabaseError("getUserPushSubscriptions", error);
+        } else if (data) {
+          return data;
+        }
+      } catch (err: any) {
+        handleSupabaseError("getUserPushSubscriptions", err);
+      }
+    }
+
+    const db = this.loadDB();
+    return (db.notification_subscriptions || []).filter(
+      s => s.user_id === userId && s.is_active
+    );
+  }
+
+  static async deactivatePushSubscription(endpoint: string): Promise<void> {
+    const db = this.loadDB();
+    if (db.notification_subscriptions) {
+      db.notification_subscriptions = db.notification_subscriptions.map(s =>
+        s.endpoint === endpoint ? { ...s, is_active: false, updated_at: new Date().toISOString() } : s
+      );
+      this.saveDB(db);
+    }
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("notification_subscriptions")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("endpoint", endpoint);
+
+        if (error) {
+          handleSupabaseError("deactivatePushSubscription", error);
+        }
+      } catch (err: any) {
+        handleSupabaseError("deactivatePushSubscription", err);
+      }
+    }
+  }
+
+  static async getUsersDueForBriefing(): Promise<{ userId: string; frequencyHours: number; topics: string[] }[]> {
+    const dueUsers: { userId: string; frequencyHours: number; topics: string[] }[] = [];
+    const supabase = getSupabaseClient();
+
+    if (supabase) {
+      try {
+        const { data: prefs, error } = await supabase
+          .from("user_preferences")
+          .select("user_id, briefing_frequency_hours, notifications_enabled, topics")
+          .eq("notifications_enabled", true);
+
+        if (!error && prefs) {
+          for (const pref of prefs) {
+            const freqHours = Number(pref.briefing_frequency_hours) || 6;
+            // Check latest briefing for this user
+            const { data: latestBriefing } = await supabase
+              .from("briefings")
+              .select("generated_at")
+              .eq("user_id", pref.user_id)
+              .order("generated_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (!latestBriefing) {
+              // Never received a briefing, generate first one
+              dueUsers.push({
+                userId: pref.user_id,
+                frequencyHours: freqHours,
+                topics: safeParseArray(pref.topics || ["technology", "startups"])
+              });
+            } else {
+              const lastGenTime = new Date(latestBriefing.generated_at).getTime();
+              const elapsedHours = (Date.now() - lastGenTime) / (1000 * 60 * 60);
+              // Allow a 5 minute grace margin
+              if (elapsedHours >= (freqHours - 0.08)) {
+                dueUsers.push({
+                  userId: pref.user_id,
+                  frequencyHours: freqHours,
+                  topics: safeParseArray(pref.topics || ["technology", "startups"])
+                });
+              }
+            }
+          }
+          return dueUsers;
+        }
+      } catch (err: any) {
+        handleSupabaseError("getUsersDueForBriefing", err);
+      }
+    }
+
+    // Local DB fallback
+    const db = this.loadDB();
+    if (db.preferences?.notifications_enabled) {
+      const freqHours = db.preferences.briefing_frequency_hours || 6;
+      const latest = db.briefings?.[0];
+      if (!latest) {
+        dueUsers.push({
+          userId: "default",
+          frequencyHours: freqHours,
+          topics: db.preferences.topics || ["technology", "startups"]
+        });
+      } else {
+        const lastGenTime = new Date(latest.generated_at).getTime();
+        const elapsedHours = (Date.now() - lastGenTime) / (1000 * 60 * 60);
+        if (elapsedHours >= (freqHours - 0.08)) {
+          dueUsers.push({
+            userId: "default",
+            frequencyHours: freqHours,
+            topics: db.preferences.topics || ["technology", "startups"]
+          });
+        }
+      }
+    }
+
+    return dueUsers;
   }
 
   static async getReadStoryIds(userId?: string): Promise<string[]> {
@@ -616,3 +824,6 @@ export class DBManager {
     }
   }
 }
+
+export const DatabaseService = DBManager;
+
