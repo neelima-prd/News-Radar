@@ -10,6 +10,8 @@ News Radar is an AI-powered executive news intelligence assistant. It automatica
 
 News Radar V1 operates on a streamlined PostgreSQL database schema via Supabase, with full local file-based fallback (`db.json`) for resilience and offline-first usage.
 
+News Radar uses an externally scheduled hourly HTTP trigger to invoke the Vercel briefing dispatcher (`/api/cron/briefing-dispatcher`). The dispatcher itself determines which users are due for a briefing based on their configured frequency.
+
 ### V1 Database Tables
 
 1. **`profiles`** — User profile records and configuration.
@@ -38,7 +40,7 @@ News Radar V1 operates on a streamlined PostgreSQL database schema via Supabase,
 - `POST /api/notifications/subscribe` — Registers a browser Web Push subscription.
 - `POST /api/notifications/unsubscribe` — Deactivates a Web Push subscription.
 - `POST /api/notifications/test` — Sends an instant test push notification to the user.
-- `GET /api/cron/briefing-dispatcher` — Hourly cron runner that automatically generates briefings and dispatches desktop notifications to users due for a briefing.
+- `GET/POST /api/cron/briefing-dispatcher` — Hourly external scheduler endpoint (authenticated via `CRON_SECRET`) that evaluates due users, generates briefings, and dispatches desktop notifications.
 
 ## Local Development & Setup
 

@@ -40,29 +40,63 @@ This migration creates:
 
 ---
 
-## 3. Vercel Cron Configuration
+## 3. Scheduled Briefing Dispatcher Configuration (External Scheduler)
 
-Vercel Cron is automatically configured via `vercel.json` to trigger every hour:
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/briefing-dispatcher",
-      "schedule": "0 * * * *"
-    }
-  ]
-}
-```
+News Radar uses an externally scheduled hourly HTTP trigger to invoke the Vercel briefing dispatcher. The dispatcher itself determines which users are due for a briefing based on their configured frequency (`briefing_frequency_hours`: 3, 6, 12, or 24 hours).
 
-When triggered:
-1. The cron endpoint verifies the `Authorization: Bearer <CRON_SECRET>` header.
-2. It queries all users whose `notifications_enabled = true` and whose last briefing is older than their configured `briefing_frequency_hours` (3, 6, 12, or 24 hours).
-3. For each due user, it generates a fresh intelligence briefing and delivers a desktop push notification via Web Push.
-4. Invalid/expired endpoints (HTTP 410 / 404) are automatically marked inactive in the database.
+### Dispatcher Endpoint Details:
+- **URL**: `https://newsradar-brief.vercel.app/api/cron/briefing-dispatcher`
+- **HTTP Method**: `GET` or `POST`
+- **Header**: `Authorization: Bearer <YOUR_CRON_SECRET>`
+- **Recommended Schedule**: Every hour (`0 * * * *`)
+
+### Setting up an External Scheduler:
+You can use any free cron service (e.g. [cron-job.org](https://cron-job.org), GitHub Actions, or EasyCron) to hit the endpoint hourly:
+
+1. **URL**: `https://newsradar-brief.vercel.app/api/cron/briefing-dispatcher`
+2. **Schedule**: Hourly (`0 * * * *` or every 60 minutes)
+3. **HTTP Header**:
+   ```
+   Authorization: Bearer <CRON_SECRET>
+   ```
+
+### Execution Flow:
+1. The external cron hits `/api/cron/briefing-dispatcher`.
+2. The endpoint validates `Authorization: Bearer <CRON_SECRET>`.
+3. It queries all users whose `notifications_enabled = true` and whose last briefing is older than their configured `briefing_frequency_hours` (3, 6, 12, or 24 hours).
+4. For each due user, it generates a fresh intelligence briefing and delivers a desktop push notification via Web Push.
+5. Users configured for 6, 12, or 24 hours are safely evaluated and skipped if their interval has not yet elapsed (idempotent duplicate protection).
+6. Invalid/expired endpoints (HTTP 410 / 404) are automatically marked inactive in the database.
 
 ---
 
-## 4. Running the Application
+## 4. Manual Test with cURL
+
+You can test the dispatcher at any time using cURL:
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  https://newsradar-brief.vercel.app/api/cron/briefing-dispatcher
+```
+
+Expected responses:
+- **Valid Secret & Success**:
+  ```json
+  {"ok": true, "processedCount": 1, "results": [{"userId": "...", "briefingId": "...", "pushed": true}]}
+  ```
+- **Valid Secret & No Users Due**:
+  ```json
+  {"ok": true, "processedCount": 0, "results": []}
+  ```
+- **Unauthorized / Invalid Secret**:
+  ```json
+  {"error": "Unauthorized cron execution."}
+  ```
+
+---
+
+## 5. Running the Application Locally
 
 ```bash
 npm install

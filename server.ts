@@ -115,8 +115,10 @@ app.post("/api/notifications/test", async (req, res) => {
   }
 });
 
-// API: Vercel Cron Briefing Dispatcher
-app.get("/api/cron/briefing-dispatcher", async (req, res) => {
+// API: Scheduled Briefing Dispatcher (External Cron / Webhook)
+// Invoked every hour by an external scheduler (e.g. cron-job.org, GitHub Actions, EasyCron)
+// Protected via Authorization: Bearer <CRON_SECRET>
+const handleBriefingDispatcher = async (req: express.Request, res: express.Response) => {
   // Verify authorization if CRON_SECRET is configured
   const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET;
@@ -124,16 +126,16 @@ app.get("/api/cron/briefing-dispatcher", async (req, res) => {
     return res.status(401).json({ error: "Unauthorized cron execution." });
   }
 
-  console.info("[Cron] Running briefing dispatcher cycle...");
+  console.info("[Dispatcher] Running automated briefing cycle...");
   try {
     const dueUsers = await DatabaseService.getUsersDueForBriefing();
-    console.info(`[Cron] Found ${dueUsers.length} user(s) due for automated briefing.`);
+    console.info(`[Dispatcher] Found ${dueUsers.length} user(s) due for automated briefing.`);
 
     const results: any[] = [];
 
     for (const dueUser of dueUsers) {
       try {
-        console.info(`[Cron] Generating scheduled briefing for user ${dueUser.userId}...`);
+        console.info(`[Dispatcher] Generating scheduled briefing for user ${dueUser.userId}...`);
         const rawArticles = await NewsService.fetchLatestArticles([]);
         const briefing = await NewsService.runRadarIntelligence(rawArticles, dueUser.topics);
         briefing.is_automated = true;
@@ -162,7 +164,7 @@ app.get("/api/cron/briefing-dispatcher", async (req, res) => {
           pushed: pushResult.sentCount > 0
         });
       } catch (userErr: any) {
-        console.error(`[Cron] Failed to generate scheduled briefing for user ${dueUser.userId}:`, userErr);
+        console.error(`[Dispatcher] Failed to generate scheduled briefing for user ${dueUser.userId}:`, userErr);
         results.push({
           userId: dueUser.userId,
           error: userErr.message || String(userErr)
@@ -172,10 +174,13 @@ app.get("/api/cron/briefing-dispatcher", async (req, res) => {
 
     res.json({ ok: true, processedCount: dueUsers.length, results });
   } catch (err: any) {
-    console.error("[Cron] Dispatcher execution error:", err);
-    res.status(500).json({ error: err.message || "Cron dispatcher failed" });
+    console.error("[Dispatcher] Execution error:", err);
+    res.status(500).json({ error: err.message || "Briefing dispatcher failed" });
   }
-});
+};
+
+app.get("/api/cron/briefing-dispatcher", handleBriefingDispatcher);
+app.post("/api/cron/briefing-dispatcher", handleBriefingDispatcher);
 
 // API: Get briefings
 app.get("/api/briefings", async (req, res) => {
