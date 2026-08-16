@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { Check, X, Settings, Bell, AlertCircle, RefreshCw } from "lucide-react";
+import { Check, X, Settings, Bell, AlertCircle, RefreshCw, BellOff, ShieldAlert } from "lucide-react";
 import { UserPreferences } from "../types";
 import { motion } from "motion/react";
 import {
   isPushNotificationSupported,
   getNotificationPermissionState,
+  getActivePushSubscription,
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications
 } from "../utils/push";
@@ -33,13 +34,49 @@ export function PreferencesModal({
 
   const [pushSupported, setPushSupported] = useState(true);
   const [permissionState, setPermissionState] = useState<NotificationPermission>("default");
+  const [hasSubscription, setHasSubscription] = useState(false);
   const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
 
+  // Synchronize browser notification & push subscription states
   useEffect(() => {
-    setPushSupported(isPushNotificationSupported());
-    setPermissionState(getNotificationPermissionState());
-  }, []);
+    let isMounted = true;
+
+    const verifyState = async () => {
+      const supported = isPushNotificationSupported();
+      const permission = getNotificationPermissionState();
+
+      if (!isMounted) return;
+      setPushSupported(supported);
+      setPermissionState(permission);
+
+      if (supported && permission === "granted") {
+        const sub = await getActivePushSubscription();
+        if (!isMounted) return;
+        setHasSubscription(!!sub);
+
+        // Auto-recover subscription if user preferences say enabled but device sub missing
+        if (preferences.notifications_enabled && !sub) {
+          try {
+            const recovery = await subscribeToPushNotifications(userEmail);
+            if (recovery.success && isMounted) {
+              setHasSubscription(true);
+            }
+          } catch (e) {
+            console.warn("[PreferencesModal] Auto-recovery failed:", e);
+          }
+        }
+      } else {
+        setHasSubscription(false);
+      }
+    };
+
+    verifyState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [preferences.notifications_enabled, userEmail]);
 
   const availableTopics = [
     { id: "technology", label: "Technology", active: true },
@@ -59,43 +96,60 @@ export function PreferencesModal({
     } else {
       updatedTopics = [...currentTopics, topicId];
     }
-    const updated = { ...preferences, topics: updatedTopics };
+    const updated: UserPreferences = { ...preferences, topics: updatedTopics };
     onSavePreferences(updated);
   };
 
   const handleFrequencyChange = (freqHours: number) => {
-    const updated = {
+    const updated: UserPreferences = {
       ...preferences,
       briefing_frequency_hours: freqHours as 3 | 6 | 12 | 24
     };
     onSavePreferences(updated);
   };
 
+  // State calculations
+  const isEnabled = preferences.notifications_enabled === true && permissionState === "granted" && hasSubscription;
+  const isNeedsReconnect = preferences.notifications_enabled === true && permissionState === "granted" && !hasSubscription;
+  const isBlocked = permissionState === "denied";
+
   const handleToggleNotifications = async () => {
-    if (!pushSupported) return;
+    if (!pushSupported || isBlocked) return;
     setIsUpdatingPush(true);
     setTestStatus(null);
 
-    const isCurrentlyEnabled = preferences.notifications_enabled && permissionState === "granted";
-
-    if (isCurrentlyEnabled) {
-      // Turn off
-      await unsubscribeFromPushNotifications(userEmail);
-      const updated = { ...preferences, notifications_enabled: false };
-      onSavePreferences(updated);
-      setIsUpdatingPush(false);
-    } else {
-      // Turn on / Request permission
-      const result = await subscribeToPushNotifications(userEmail);
-      setPermissionState(getNotificationPermissionState());
-
-      if (result.success) {
-        const updated = { ...preferences, notifications_enabled: true };
+    if (isEnabled) {
+      // Disable Notifications
+      try {
+        await unsubscribeFromPushNotifications(userEmail);
+        setHasSubscription(false);
+        const updated: UserPreferences = { ...preferences, notifications_enabled: false };
         onSavePreferences(updated);
-      } else {
-        console.warn("[PreferencesModal] Notification subscription notice:", result.error);
+      } catch (err) {
+        console.error("[PreferencesModal] Disable error:", err);
+      } finally {
+        setIsUpdatingPush(false);
       }
-      setIsUpdatingPush(false);
+    } else {
+      // Enable or Reconnect Notifications
+      try {
+        const result = await subscribeToPushNotifications(userEmail);
+        const currentPerm = getNotificationPermissionState();
+        setPermissionState(currentPerm);
+
+        if (result.success) {
+          setHasSubscription(true);
+          const updated: UserPreferences = { ...preferences, notifications_enabled: true };
+          onSavePreferences(updated);
+        } else {
+          setHasSubscription(false);
+          console.warn("[PreferencesModal] Enable error notice:", result.error);
+        }
+      } catch (err) {
+        console.error("[PreferencesModal] Enable error:", err);
+      } finally {
+        setIsUpdatingPush(false);
+      }
     }
   };
 
@@ -111,14 +165,14 @@ export function PreferencesModal({
       });
       const data = await res.json();
       if (data.ok && data.sentCount > 0) {
-        setTestStatus("Test alert sent!");
+        setTestStatus("Test alert sent to your desktop!");
       } else {
         setTestStatus("Subscribed, but alert failed to dispatch (check VAPID keys).");
       }
     } catch {
       setTestStatus("Error triggering test alert.");
     }
-    setTimeout(() => setTestStatus(null), 4000);
+    setTimeout(() => setTestStatus(null), 4500);
   };
 
   return (
@@ -146,65 +200,100 @@ export function PreferencesModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close preferences"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Desktop Notifications Control */}
+        {/* Desktop Notifications Control Panel */}
         <div className="space-y-3">
           <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400">
             Desktop Notifications
           </h4>
 
           <div
-            className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+            className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors ${
               isDark ? "bg-[#0b0f1a] border-slate-800" : "bg-gray-50 border-gray-200"
             }`}
           >
-            <div className="space-y-1">
+            <div className="space-y-1 pr-2">
               <div className="flex items-center gap-2">
-                <Bell size={15} className={preferences.notifications_enabled ? "text-cyan-400" : "text-slate-400"} />
-                <span className="font-bold text-xs">Get notified when briefing is ready</span>
-                {preferences.notifications_enabled && permissionState === "granted" && (
+                {isEnabled ? (
+                  <Bell size={15} className="text-cyan-400" />
+                ) : isBlocked ? (
+                  <ShieldAlert size={15} className="text-red-400" />
+                ) : isNeedsReconnect ? (
+                  <AlertCircle size={15} className="text-amber-400" />
+                ) : (
+                  <BellOff size={15} className="text-slate-400" />
+                )}
+
+                <span className="font-bold text-xs">
+                  {!pushSupported
+                    ? "Desktop notifications unsupported"
+                    : isBlocked
+                    ? "Desktop notifications blocked by browser"
+                    : isEnabled
+                    ? "Desktop notifications enabled"
+                    : isNeedsReconnect
+                    ? "Notifications need to be reconnected"
+                    : "Get notified when briefing is ready"}
+                </span>
+
+                {isEnabled && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     ON
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400">
-                Delivers an alert to your desktop when the automated briefing cycle completes.
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {!pushSupported
+                  ? "Web Push notifications are not supported in this browser."
+                  : isBlocked
+                  ? "Notifications are blocked in your browser settings. To enable, click the padlock/site settings icon in your address bar and set Notifications to Allow."
+                  : isEnabled
+                  ? "You'll be notified when your next intelligence briefing is ready."
+                  : isNeedsReconnect
+                  ? "Browser permission is granted, but your device push subscription is inactive or needs refreshing."
+                  : "Delivers an alert to your desktop when the automated briefing cycle completes."}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
               {!pushSupported ? (
-                <div className="flex items-center gap-1 text-amber-400 text-xs font-semibold">
+                <div className="flex items-center gap-1 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <AlertCircle size={13} />
                   <span>Unsupported</span>
                 </div>
-              ) : permissionState === "denied" ? (
+              ) : isBlocked ? (
                 <div className="text-right">
-                  <span className="text-[11px] font-bold text-red-400 block">Blocked by Browser</span>
-                  <span className="text-[9px] text-slate-400">Enable via address bar padlock</span>
+                  <span className="text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg inline-block">
+                    Blocked in Browser
+                  </span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={handleToggleNotifications}
                   disabled={isUpdatingPush}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                    preferences.notifications_enabled && permissionState === "granted"
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50 ${
+                    isEnabled
                       ? "bg-slate-700 hover:bg-slate-600 text-white"
+                      : isNeedsReconnect
+                      ? "bg-amber-600 hover:bg-amber-700 text-white"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                 >
                   {isUpdatingPush ? (
                     <RefreshCw size={12} className="animate-spin" />
-                  ) : preferences.notifications_enabled && permissionState === "granted" ? (
-                    "Turn Off"
+                  ) : isEnabled ? (
+                    "Disable"
+                  ) : isNeedsReconnect ? (
+                    "Reconnect"
                   ) : (
                     "Enable"
                   )}
@@ -213,8 +302,9 @@ export function PreferencesModal({
             </div>
           </div>
 
-          {preferences.notifications_enabled && permissionState === "granted" && (
-            <div className="flex items-center justify-between pt-1 text-xs">
+          {/* Test Notification Action Link when Enabled */}
+          {isEnabled && (
+            <div className="flex items-center justify-between pt-1 text-xs px-1">
               <span className="text-slate-400 text-[11px]">Verify desktop alert delivery:</span>
               <button
                 type="button"

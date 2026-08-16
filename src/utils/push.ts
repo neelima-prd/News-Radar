@@ -31,6 +31,39 @@ export function getNotificationPermissionState(): NotificationPermission {
   return Notification.permission;
 }
 
+export async function getActivePushSubscription(): Promise<PushSubscription | null> {
+  if (!isPushNotificationSupported()) return null;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return null;
+    return await registration.pushManager.getSubscription();
+  } catch (e) {
+    console.warn('[WebPush] Error getting push subscription:', e);
+    return null;
+  }
+}
+
+export async function checkNotificationStatus(): Promise<{
+  supported: boolean;
+  permission: NotificationPermission;
+  hasSubscription: boolean;
+}> {
+  if (!isPushNotificationSupported()) {
+    return { supported: false, permission: 'denied', hasSubscription: false };
+  }
+  const permission = getNotificationPermissionState();
+  let hasSubscription = false;
+  if (permission === 'granted') {
+    const sub = await getActivePushSubscription();
+    hasSubscription = !!sub;
+  }
+  return {
+    supported: true,
+    permission,
+    hasSubscription
+  };
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!isPushNotificationSupported()) return null;
   try {
@@ -53,7 +86,15 @@ export async function subscribeToPushNotifications(
   }
 
   try {
-    const permission = await Notification.requestPermission();
+    let permission = getNotificationPermissionState();
+    if (permission === 'denied') {
+      return { success: false, error: 'Notifications are blocked in your browser settings.' };
+    }
+
+    if (permission !== 'granted') {
+      permission = await Notification.requestPermission();
+    }
+
     if (permission !== 'granted') {
       return { success: false, error: 'Permission was not granted for desktop notifications.' };
     }
@@ -131,8 +172,18 @@ export async function unsubscribeFromPushNotifications(userEmail: string): Promi
           },
           body: JSON.stringify({ endpoint: subscription.endpoint })
         }).catch(() => {});
-        await subscription.unsubscribe();
+        await subscription.unsubscribe().catch(() => {});
       }
+    } else {
+      // In case registration not active, still call server unsubscribe
+      await fetch('/api/notifications/unsubscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify({})
+      }).catch(() => {});
     }
     return true;
   } catch (e) {

@@ -282,19 +282,28 @@ app.get("/api/preferences", async (req, res) => {
 
 app.put("/api/preferences", async (req, res) => {
   try {
-    const { topics, briefing_frequency_hours } = req.body;
+    const { topics, briefing_frequency_hours, notifications_enabled } = req.body;
     const userEmail = req.headers["x-user-email"] as string | undefined;
 
-    const validTopics = Array.isArray(topics) ? topics : ["technology", "startups"];
-    const validFreq = [3, 6, 12, 24].includes(Number(briefing_frequency_hours)) ? Number(briefing_frequency_hours) as any : 6;
+    const currentPrefs = await DBManager.getPreferences(userEmail);
+
+    const validTopics = Array.isArray(topics) ? topics : (currentPrefs.topics || ["technology", "startups"]);
+    const validFreq = [3, 6, 12, 24].includes(Number(briefing_frequency_hours))
+      ? (Number(briefing_frequency_hours) as any)
+      : (currentPrefs.briefing_frequency_hours || 6);
+
+    const isNotifEnabled = typeof notifications_enabled === "boolean"
+      ? notifications_enabled
+      : (currentPrefs.notifications_enabled ?? false);
 
     const updatedPrefs: UserPreferences = {
       topics: validTopics,
-      briefing_frequency_hours: validFreq
+      briefing_frequency_hours: validFreq,
+      notifications_enabled: isNotifEnabled
     };
 
     await DBManager.savePreferences(updatedPrefs, userEmail);
-    console.info("[Server] User preferences updated successfully.");
+    console.info("[Server] User preferences updated successfully:", updatedPrefs);
 
     res.json({ ok: true, preferences: updatedPrefs });
   } catch (err: any) {

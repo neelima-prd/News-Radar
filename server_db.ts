@@ -552,6 +552,7 @@ export class DBManager {
       try {
         const payload: any = {
           user_id: userId,
+          topics: preferences.topics,
           briefing_frequency_hours: preferences.briefing_frequency_hours,
           updated_at: new Date().toISOString()
         };

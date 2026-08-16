@@ -194,17 +194,20 @@ export default function App() {
 
   // Determine whether to show the contextual notification banner
   useEffect(() => {
-    if (
-      isPushNotificationSupported() &&
-      getNotificationPermissionState() === "default" &&
-      !preferences.notifications_enabled
-    ) {
+    if (!isPushNotificationSupported()) {
+      setShowNotificationPrompt(false);
+      return;
+    }
+    const perm = getNotificationPermissionState();
+    if (perm === "denied" || preferences.notifications_enabled === true || perm === "granted") {
+      setShowNotificationPrompt(false);
+    } else if (perm === "default" && !preferences.notifications_enabled) {
       const dismissed = localStorage.getItem("news_radar_notif_banner_dismissed");
       if (!dismissed) {
         setShowNotificationPrompt(true);
+      } else {
+        setShowNotificationPrompt(false);
       }
-    } else {
-      setShowNotificationPrompt(false);
     }
   }, [preferences.notifications_enabled]);
 
@@ -213,9 +216,12 @@ export default function App() {
     const userId = session?.user?.id || "default";
     const result = await subscribeToPushNotifications(userId);
     if (result.success) {
-      const updated = { ...preferences, notifications_enabled: true };
-      handleSavePreferences(updated);
+      const updated: UserPreferences = { ...preferences, notifications_enabled: true };
+      setPreferences(updated);
+      await handleSavePreferences(updated);
       setShowNotificationPrompt(false);
+    } else {
+      console.warn("[App] Notification subscription notice:", result.error);
     }
     setEnablingPush(false);
   };
