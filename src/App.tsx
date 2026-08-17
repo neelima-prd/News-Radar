@@ -17,7 +17,8 @@ import { NotificationPromptBanner } from "./components/NotificationPromptBanner"
 import {
   isPushNotificationSupported,
   getNotificationPermissionState,
-  subscribeToPushNotifications
+  subscribeToPushNotifications,
+  getActivePushSubscription
 } from "./utils/push";
 
 export function RadarLogo({
@@ -177,9 +178,13 @@ export default function App() {
   // Currently selected active story ID in queue
   const [activeCardId, setActiveCardId] = useState<string>("");
 
-  // Notification contextual prompt state
+  // Notification synchronization state
+  const [pushSupported, setPushSupported] = useState(true);
+  const [permissionState, setPermissionState] = useState<NotificationPermission>("default");
+  const [hasSubscription, setHasSubscription] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "News Radar — AI Intelligence Briefing";
@@ -192,38 +197,76 @@ export default function App() {
     }
   }, []);
 
-  // Determine whether to show the contextual notification banner
+  // Synchronize browser notification & push subscription states
+  const syncNotificationState = async () => {
+    const supported = isPushNotificationSupported();
+    const permission = getNotificationPermissionState();
+
+    setPushSupported(supported);
+    setPermissionState(permission);
+
+    if (supported && permission === "granted") {
+      const sub = await getActivePushSubscription();
+      setHasSubscription(!!sub);
+
+      // Auto-recover subscription if preferences say enabled but active device subscription is missing
+      if (preferences.notifications_enabled && !sub) {
+        const userId = session?.user?.id || "default";
+        try {
+          const recovery = await subscribeToPushNotifications(userId);
+          if (recovery.success) {
+            setHasSubscription(true);
+          }
+        } catch (e) {
+          console.warn("[App] Notification subscription recovery note:", e);
+        }
+      }
+    } else {
+      setHasSubscription(false);
+    }
+  };
+
   useEffect(() => {
-    if (!isPushNotificationSupported()) {
+    syncNotificationState();
+  }, [preferences.notifications_enabled, session?.user?.id]);
+
+  // Determine whether to show contextual notification prompt banner
+  useEffect(() => {
+    if (!pushSupported || permissionState === "denied" || permissionState === "granted" || preferences.notifications_enabled) {
       setShowNotificationPrompt(false);
       return;
     }
-    const perm = getNotificationPermissionState();
-    if (perm === "denied" || preferences.notifications_enabled === true || perm === "granted") {
-      setShowNotificationPrompt(false);
-    } else if (perm === "default" && !preferences.notifications_enabled) {
-      const dismissed = localStorage.getItem("news_radar_notif_banner_dismissed");
-      if (!dismissed) {
-        setShowNotificationPrompt(true);
-      } else {
-        setShowNotificationPrompt(false);
-      }
-    }
-  }, [preferences.notifications_enabled]);
+    const dismissed = localStorage.getItem("news_radar_notif_banner_dismissed");
+    setShowNotificationPrompt(!dismissed);
+  }, [pushSupported, permissionState, preferences.notifications_enabled]);
 
   const handleEnablePushFromPrompt = async () => {
+    if (!pushSupported || permissionState === "denied") return;
     setEnablingPush(true);
+    setPushError(null);
     const userId = session?.user?.id || "default";
-    const result = await subscribeToPushNotifications(userId);
-    if (result.success) {
-      const updated: UserPreferences = { ...preferences, notifications_enabled: true };
-      setPreferences(updated);
-      await handleSavePreferences(updated);
-      setShowNotificationPrompt(false);
-    } else {
-      console.warn("[App] Notification subscription notice:", result.error);
+    try {
+      const result = await subscribeToPushNotifications(userId);
+      if (result.success) {
+        const updated: UserPreferences = { ...preferences, notifications_enabled: true };
+        setPreferences(updated);
+        setPermissionState("granted");
+        setHasSubscription(true);
+        setShowNotificationPrompt(false);
+        setPushError(null);
+        await handleSavePreferences(updated);
+      } else {
+        console.warn("[App] Notification subscription notice:", result.error);
+        const perm = getNotificationPermissionState();
+        setPermissionState(perm);
+        setPushError(result.error || "Failed to register push notifications. Please retry.");
+      }
+    } catch (e: any) {
+      console.error("[App] Enable push failed:", e);
+      setPushError(e?.message || "Failed to enable notifications. Please retry.");
+    } finally {
+      setEnablingPush(false);
     }
-    setEnablingPush(false);
   };
 
   const handleDismissPushPrompt = () => {
@@ -642,8 +685,14 @@ export default function App() {
                   nextBriefingTime={getFormattedNextBriefingTime()}
                   onBrowseArchive={() => setActiveTab("archives")}
                   onReviewAgain={handleReviewAgain}
-                  notificationsEnabled={preferences.notifications_enabled}
+                  isNotificationActive={
+                    pushSupported && preferences.notifications_enabled === true && permissionState === "granted" && hasSubscription
+                  }
+                  isNotificationBlocked={pushSupported && permissionState === "denied"}
+                  isNotificationUnsupported={!pushSupported}
+                  notificationError={pushError}
                   onEnableNotifications={handleEnablePushFromPrompt}
+                  loadingNotification={enablingPush}
                   theme={theme}
                 />
               ) : (

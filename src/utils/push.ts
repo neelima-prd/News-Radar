@@ -104,18 +104,45 @@ export async function subscribeToPushNotifications(
       return { success: false, error: 'Failed to initialize Service Worker.' };
     }
 
-    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    let vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    
+    // If not bundled at build-time via Vite, dynamically fetch from server config endpoint
     if (!vapidPublicKey) {
-      console.warn('[WebPush] VITE_VAPID_PUBLIC_KEY not set. Push subscription might fail.');
+      try {
+        const configRes = await fetch('/api/config');
+        if (configRes.ok) {
+          const config = await configRes.json();
+          if (config.vapidPublicKey) {
+            vapidPublicKey = config.vapidPublicKey;
+          }
+        }
+      } catch (cfgErr) {
+        console.warn('[WebPush] Could not fetch server VAPID key:', cfgErr);
+      }
+    }
+
+    if (!vapidPublicKey) {
+      return { 
+        success: false, 
+        error: 'VAPID public key is missing. Ensure VAPID_PUBLIC_KEY is configured on the server or in the environment.' 
+      };
     }
 
     let subscription = await registration.pushManager.getSubscription();
-    if (!subscription && vapidPublicKey) {
-      const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedKey
-      });
+    if (!subscription) {
+      try {
+        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey
+        });
+      } catch (subErr: any) {
+        console.error('[WebPush] PushManager.subscribe failed:', subErr);
+        return {
+          success: false,
+          error: subErr.message || 'PushManager failed to create subscription.'
+        };
+      }
     }
 
     if (!subscription) {

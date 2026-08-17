@@ -4,15 +4,19 @@
  */
 
 import React from "react";
-import { Check, ArrowRight, RotateCcw, Bell } from "lucide-react";
+import { Check, ArrowRight, RotateCcw, Bell, AlertCircle, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 
 interface BriefingCompletionViewProps {
   nextBriefingTime: string;
   onBrowseArchive: () => void;
   onReviewAgain: () => void;
-  notificationsEnabled?: boolean;
+  isNotificationActive?: boolean;
+  isNotificationBlocked?: boolean;
+  isNotificationUnsupported?: boolean;
+  notificationError?: string | null;
   onEnableNotifications?: () => void;
+  loadingNotification?: boolean;
   theme?: "dark" | "light";
 }
 
@@ -20,8 +24,12 @@ export function BriefingCompletionView({
   nextBriefingTime,
   onBrowseArchive,
   onReviewAgain,
-  notificationsEnabled = false,
+  isNotificationActive = false,
+  isNotificationBlocked = false,
+  isNotificationUnsupported = false,
+  notificationError = null,
   onEnableNotifications,
+  loadingNotification = false,
   theme = "dark"
 }: BriefingCompletionViewProps) {
   const isDark = theme === "dark";
@@ -78,20 +86,74 @@ export function BriefingCompletionView({
           </span>
         </div>
 
-        {!notificationsEnabled && onEnableNotifications && (
-          <button
-            type="button"
-            onClick={onEnableNotifications}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+        {/* NOTIFICATION STATUS & LIFECYCLE CONTROLS */}
+        {isNotificationActive ? (
+          /* CASE A — Notifications Already Active */
+          <div
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border ${
               isDark
-                ? "bg-cyan-950/40 border-cyan-800/60 text-cyan-300 hover:bg-cyan-900/50"
-                : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800"
             }`}
           >
-            <Bell size={13} className="text-cyan-400 animate-pulse" />
-            <span>Notify me when next briefing arrives</span>
-          </button>
-        )}
+            <Check size={14} className="stroke-[3] text-emerald-400 shrink-0" />
+            <span>You&apos;ll be notified when your next briefing is ready</span>
+          </div>
+        ) : isNotificationBlocked ? (
+          /* CASE C — Blocked by Browser */
+          <div
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border ${
+              isDark
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                : "bg-rose-50 border-rose-200 text-rose-700"
+            }`}
+          >
+            <AlertCircle size={13} className="shrink-0 text-rose-400" />
+            <span>Notifications blocked — enable in site settings</span>
+          </div>
+        ) : isNotificationUnsupported ? (
+          /* CASE D — Unsupported */
+          <div
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border ${
+              isDark
+                ? "bg-slate-800/40 border-slate-700/50 text-slate-400"
+                : "bg-gray-100 border-gray-200 text-gray-600"
+            }`}
+          >
+            <span>Web Push not supported in this browser</span>
+          </div>
+        ) : onEnableNotifications ? (
+          /* CASE B — Available to Enable */
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={onEnableNotifications}
+              disabled={loadingNotification}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                isDark
+                  ? "bg-cyan-950/40 border-cyan-800/60 text-cyan-300 hover:bg-cyan-900/50 hover:border-cyan-700"
+                  : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
+              } disabled:opacity-50`}
+            >
+              {loadingNotification ? (
+                <>
+                  <Sparkles size={13} className="animate-spin text-cyan-400" />
+                  <span>Enabling notifications...</span>
+                </>
+              ) : (
+                <>
+                  <Bell size={13} className="text-cyan-400 animate-pulse" />
+                  <span>{notificationError ? "Retry Notification Setup" : "Notify me when next briefing arrives"}</span>
+                </>
+              )}
+            </button>
+            {notificationError && (
+              <p className="text-[11px] text-rose-400 font-medium max-w-xs text-center">
+                {notificationError}
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-center gap-3 pt-2">
